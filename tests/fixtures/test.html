@@ -14,5 +14,13 @@
   <svg id="svg-no-title" width="100" height="100">
     <circle cx="50" cy="50" r="40"/>
   </svg>
+
+  <!-- color contrast violations -->
+  <p id="low-contrast" style="color: #aaa; background: #fff; font-size: 14px;">
+    Light gray text on white — fails 4.5:1
+  </p>
+  <p id="large-text-ok" style="color: #767676; background: #fff; font-size: 24px; font-weight: bold;">
+    Large bold text — passes 3:1
+  </p>
 </body>
 </html>
