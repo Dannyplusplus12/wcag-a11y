@@ -9,6 +9,10 @@
   "engines": {
     "node": ">=20.0.0"
   },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/cli.ts",
