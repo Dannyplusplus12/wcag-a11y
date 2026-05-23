@@ -22,5 +22,10 @@
   <p id="large-text-ok" style="color: #767676; background: #fff; font-size: 24px; font-weight: bold;">
     Large bold text — passes 3:1
   </p>
+
+  <!-- keyboard violations -->
+  <div onclick="doSomething()" id="div-click">Click me</div>
+  <button tabindex="5" id="positive-tabindex">Bad tab order</button>
+  <button tabindex="0" id="valid-tabindex">Good tab order</button>
 </body>
 </html>
