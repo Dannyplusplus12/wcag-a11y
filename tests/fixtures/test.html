@@ -38,5 +38,12 @@
     <input type="text" id="required-no-attr">
     <input type="text" id="valid-required" required aria-required="true">
   </form>
+
+  <!-- ARIA violations -->
+  <div role="invalid-role" id="bad-role">Bad role</div>
+  <div role="checkbox" id="checkbox-no-checked">No aria-checked</div>
+  <div role="button" id="div-button-no-name"></div>
+  <button id="empty-button"></button>
+  <div aria-hidden="true" tabindex="0" id="hidden-but-focusable">Hidden but focusable</div>
 </body>
 </html>
