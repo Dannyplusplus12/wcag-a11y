@@ -1,2 +1,55 @@
 import type { Rule } from '../types.js';
-export const mediaRules: Rule[] = [];
+
+export const mediaRules: Rule[] = [
+  {
+    id: 'video-captions',
+    wcag: '1.2.2',
+    level: 'A',
+    impact: 'critical',
+    description: '<video> elements must have a caption track',
+    check: () => {
+      const videos = Array.from(document.querySelectorAll('video'));
+      return videos
+        .filter((v) => !v.querySelector('track[kind="captions"], track[kind="subtitles"]'))
+        .map((v) => ({
+          selector: (v as HTMLElement).id ? `#${(v as HTMLElement).id}` : 'video',
+          html: v.outerHTML.slice(0, 200),
+        }));
+    },
+  },
+  {
+    id: 'audio-description',
+    wcag: '1.2.3',
+    level: 'A',
+    impact: 'serious',
+    description: '<video> elements should have an audio description track',
+    check: () => {
+      const videos = Array.from(document.querySelectorAll('video'));
+      return videos
+        .filter((v) => !v.querySelector('track[kind="descriptions"]'))
+        .map((v) => ({
+          selector: (v as HTMLElement).id ? `#${(v as HTMLElement).id}` : 'video',
+          html: v.outerHTML.slice(0, 200),
+        }));
+    },
+  },
+  {
+    id: 'audio-transcript',
+    wcag: '1.2.1',
+    level: 'A',
+    impact: 'serious',
+    description: '<audio> elements should have a linked transcript',
+    check: () => {
+      const audios = Array.from(document.querySelectorAll('audio'));
+      return audios
+        .filter((a) => {
+          const describedBy = a.getAttribute('aria-describedby');
+          return !describedBy || !document.getElementById(describedBy);
+        })
+        .map((a) => ({
+          selector: (a as HTMLElement).id ? `#${(a as HTMLElement).id}` : 'audio',
+          html: a.outerHTML.slice(0, 200),
+        }));
+    },
+  },
+];
