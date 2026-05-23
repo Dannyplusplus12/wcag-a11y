@@ -29,24 +29,29 @@ program
   .option('-r, --report', 'Save a full markdown report to a11y-report.md', false)
   .option('--no-ai', 'Skip AI fix generation (faster, violations only)')
   .action(async (opts: { url: string; pages: string[]; crawl: boolean; report: boolean; ai: boolean }) => {
-    console.log(`\nScanning ${opts.url}...`);
+    try {
+      console.log(`\nScanning ${opts.url}...`);
 
-    const result = await crawl({ url: opts.url, pages: opts.pages, crawl: opts.crawl });
-    printTerminalReport(result);
+      const result = await crawl({ url: opts.url, pages: opts.pages, crawl: opts.crawl });
+      printTerminalReport(result);
 
-    if (opts.ai && result.totalViolations > 0) {
-      const config = loadConfig();
-      const provider = createAIProvider(config);
-      const allViolations = result.pages.flatMap((p) => p.violations);
+      if (opts.ai && result.totalViolations > 0) {
+        const config = loadConfig();
+        const provider = createAIProvider(config);
+        const allViolations = result.pages.flatMap((p) => p.violations);
 
-      console.log(`\nGenerating AI fixes for ${allViolations.length} violations...`);
-      const fixes = await provider.generateFixes(allViolations);
+        console.log(`\nGenerating AI fixes for ${allViolations.length} violations...`);
+        const fixes = await provider.generateFixes(allViolations);
 
-      if (opts.report) {
-        generateMarkdownReport(result, fixes);
+        if (opts.report) {
+          generateMarkdownReport(result, fixes);
+        }
+      } else if (opts.report) {
+        generateMarkdownReport(result, []);
       }
-    } else if (opts.report && result.totalViolations > 0) {
-      generateMarkdownReport(result, []);
+    } catch (err) {
+      console.error(`\nError: ${(err as Error).message}`);
+      process.exit(1);
     }
   });
 

@@ -24,7 +24,19 @@ export class OllamaProvider implements AIProvider {
 
     try {
       const jsonMatch = text.match(/\[[\s\S]*\]/);
-      return jsonMatch ? JSON.parse(jsonMatch[0]) : this.fallback(violations);
+      if (!jsonMatch) return this.fallback(violations);
+      const fixes: AIFix[] = JSON.parse(jsonMatch[0]);
+      return violations.map((v) => {
+        const found = fixes.find((f) => f.ruleId === v.ruleId && f.selector === v.selector)
+          ?? fixes.find((f) => f.ruleId === v.ruleId);
+        return found ?? {
+          ruleId: v.ruleId,
+          selector: v.selector,
+          explanation: v.description,
+          fixedCode: v.html,
+          wcagReference: `WCAG 2.1 SC ${v.wcag}`,
+        };
+      });
     } catch {
       return this.fallback(violations);
     }

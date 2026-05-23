@@ -36,7 +36,8 @@ export class GeminiProvider implements AIProvider {
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       const fixes: AIFix[] = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
       return violations.map((v) => {
-        const found = fixes.find((f) => f.ruleId === v.ruleId);
+        const found = fixes.find((f) => f.ruleId === v.ruleId && f.selector === v.selector)
+          ?? fixes.find((f) => f.ruleId === v.ruleId);
         return found ?? {
           ruleId: v.ruleId,
           selector: v.selector,

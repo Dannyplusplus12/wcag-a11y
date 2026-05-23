@@ -73,7 +73,7 @@ export const ariaRules: Rule[] = [
         .filter((el) => {
           const tabindex = el.getAttribute('tabindex');
           const isFocusableTag = ['a', 'button', 'input', 'select', 'textarea'].includes(el.tagName.toLowerCase());
-          return (tabindex !== null && parseInt(tabindex) >= 0) || isFocusableTag;
+          return (tabindex !== null && parseInt(tabindex) >= 0) || (isFocusableTag && tabindex === null);
         })
         .map((el) => ({
           selector: (el as HTMLElement).id ? `#${(el as HTMLElement).id}` : el.tagName.toLowerCase(),
