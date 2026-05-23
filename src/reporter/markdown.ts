@@ -61,6 +61,11 @@ export function generateMarkdownReport(result: ScanResult, fixes: AIFix[], outpu
           fix.fixedCode,
           '```',
           '',
+          '**📋 Prompt for your AI assistant (Cursor / Copilot / Claude):**',
+          '```',
+          fix.optimalPrompt,
+          '```',
+          '',
         );
       }
 

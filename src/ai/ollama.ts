@@ -35,6 +35,7 @@ export class OllamaProvider implements AIProvider {
           explanation: v.description,
           fixedCode: v.html,
           wcagReference: `WCAG 2.1 SC ${v.wcag}`,
+          optimalPrompt: `Fix this accessibility violation: The element \`${v.html.slice(0, 120)}\` at selector \`${v.selector}\` violates ${v.wcag} — ${v.description}. Please fix it in the codebase.`,
         };
       });
     } catch {
@@ -49,6 +50,7 @@ export class OllamaProvider implements AIProvider {
       explanation: v.description,
       fixedCode: v.html,
       wcagReference: `WCAG 2.1 SC ${v.wcag}`,
+      optimalPrompt: `Fix this accessibility violation: The element \`${v.html.slice(0, 120)}\` at selector \`${v.selector}\` violates ${v.wcag} — ${v.description}. Please fix it in the codebase.`,
     }));
   }
 }
