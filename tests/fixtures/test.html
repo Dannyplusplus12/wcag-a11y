@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>A11y Test Fixture</title></head>
+<body>
+  <!-- img-alt violations -->
+  <img src="photo.jpg" id="missing-alt">
+  <img src="icon.png" alt="" role="img" id="decorative-needs-label">
+  <input type="image" src="submit.png" id="input-image-no-alt">
+
+  <!-- img with alt (valid) -->
+  <img src="logo.png" alt="Company Logo" id="valid-img">
+
+  <!-- SVG without title -->
+  <svg id="svg-no-title" width="100" height="100">
+    <circle cx="50" cy="50" r="40"/>
+  </svg>
+</body>
+</html>
