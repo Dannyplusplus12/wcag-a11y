@@ -17,8 +17,8 @@ export interface Rule {
   level: 'A' | 'AA' | 'AAA';
   impact: ImpactLevel;
   description: string;
-  // Returns violations found on the page. Runs inside Playwright page.evaluate().
-  check: () => Violation[];
+  // Returns partial results (selector and html); engine adds metadata (ruleId, wcag, level, impact, description, page)
+  check: () => Array<{ selector: string; html: string }>;
 }
 
 export interface PageScanResult {
