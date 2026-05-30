@@ -2,6 +2,7 @@ import type { Violation } from '../engine/types.js';
 import type { AIProvider, AIFix } from './types.js';
 import { buildPrompt } from './prompt.js';
 import { groupViolations, type ViolationGroup } from './group.js';
+import { fallbackExplanation } from './fallback-explanation.js';
 
 export class GeminiProvider implements AIProvider {
   constructor(private apiKey: string, private model = 'gemini-2.5-flash') {}
@@ -51,7 +52,7 @@ export class GeminiProvider implements AIProvider {
   private fallbackFix(g: ViolationGroup): AIFix {
     const v = g.representative;
     const selectorList = g.selectors.map((s) => `- ${s}`).join('\n');
-    const explanation = `Users relying on assistive technologies are affected: ${g.description.toLowerCase()}. This fails WCAG 2.1 SC ${g.wcag} (Level ${g.level}).`;
+    const explanation = fallbackExplanation(g.ruleId, g.description, g.wcag, g.level);
     const prompt = g.count > 1
       ? `Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected elements (${g.count} instances):\n${selectorList}\n\nRepresentative HTML:\n\`${v.html.slice(0, 300)}\`\n\nApply the fix to all ${g.count} instances in the codebase to comply with WCAG 2.1 SC ${g.wcag}.`
       : `Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected element:\n- Selector: \`${g.selectors[0]}\`\n- HTML: \`${v.html.slice(0, 300)}\`\n\nApply the fix to comply with WCAG 2.1 SC ${g.wcag}.`;
