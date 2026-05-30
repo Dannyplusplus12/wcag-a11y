@@ -8,6 +8,21 @@ export const colorContrastRules: Rule[] = [
     impact: 'serious',
     description: 'Text must have a contrast ratio of at least 4.5:1 against its background',
     check: () => {
+      const getCssPath = (el: Element): string => {
+        if ((el as HTMLElement).id) return '#' + (el as HTMLElement).id;
+        const parts: string[] = [];
+        let node: Element | null = el;
+        while (node && node.tagName !== 'BODY') {
+          const parent: HTMLElement | null = node.parentElement;
+          if (!parent) break;
+          const tag = node.tagName.toLowerCase();
+          const sibs = Array.from<Element>(parent.children).filter((c) => c.tagName === (node as Element).tagName);
+          parts.unshift(sibs.length === 1 ? tag : tag + ':nth-of-type(' + (sibs.indexOf(node as Element) + 1) + ')');
+          if (parent.id) { parts.unshift('#' + parent.id); break; }
+          node = parent;
+        }
+        return parts.join(' > ') || el.tagName.toLowerCase();
+      };
       const elements = Array.from(document.querySelectorAll('p, span, li, td, th, h1, h2, h3, h4, h5, h6, a, label'));
       const violations: Array<{ selector: string; html: string }> = [];
 
@@ -34,10 +49,7 @@ export const colorContrastRules: Rule[] = [
         const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 
         if (ratio < 4.5) {
-          violations.push({
-            selector: (el as HTMLElement).id ? `#${(el as HTMLElement).id}` : el.tagName.toLowerCase(),
-            html: el.outerHTML.slice(0, 200),
-          });
+          violations.push({ selector: getCssPath(el), html: el.outerHTML.slice(0, 200) });
         }
       }
       return violations;
@@ -50,6 +62,21 @@ export const colorContrastRules: Rule[] = [
     impact: 'serious',
     description: 'Large text (18pt or 14pt bold) must have a contrast ratio of at least 3:1',
     check: () => {
+      const getCssPath = (el: Element): string => {
+        if ((el as HTMLElement).id) return '#' + (el as HTMLElement).id;
+        const parts: string[] = [];
+        let node: Element | null = el;
+        while (node && node.tagName !== 'BODY') {
+          const parent: HTMLElement | null = node.parentElement;
+          if (!parent) break;
+          const tag = node.tagName.toLowerCase();
+          const sibs = Array.from<Element>(parent.children).filter((c) => c.tagName === (node as Element).tagName);
+          parts.unshift(sibs.length === 1 ? tag : tag + ':nth-of-type(' + (sibs.indexOf(node as Element) + 1) + ')');
+          if (parent.id) { parts.unshift('#' + parent.id); break; }
+          node = parent;
+        }
+        return parts.join(' > ') || el.tagName.toLowerCase();
+      };
       const elements = Array.from(document.querySelectorAll('p, span, h1, h2, h3, h4, h5, h6'));
       const violations: Array<{ selector: string; html: string }> = [];
 
@@ -75,10 +102,7 @@ export const colorContrastRules: Rule[] = [
         const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 
         if (ratio < 3) {
-          violations.push({
-            selector: (el as HTMLElement).id ? `#${(el as HTMLElement).id}` : el.tagName.toLowerCase(),
-            html: el.outerHTML.slice(0, 200),
-          });
+          violations.push({ selector: getCssPath(el), html: el.outerHTML.slice(0, 200) });
         }
       }
       return violations;

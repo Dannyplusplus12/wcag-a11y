@@ -4,7 +4,7 @@
   "description": "WCAG 2.1/2.2 accessibility auditor with AI-powered fixes",
   "type": "module",
   "bin": {
-    "wcag-a11y": "./dist/cli.js"
+    "wcag-a11y": "dist/cli.js"
   },
   "engines": {
     "node": ">=20.0.0"

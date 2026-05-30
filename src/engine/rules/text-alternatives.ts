@@ -48,10 +48,24 @@ export const textAlternativeRules: Rule[] = [
           const isDecorative = svg.getAttribute('aria-hidden') === 'true';
           return !hasTitle && !hasAriaLabel && !isDecorative;
         })
-        .map((svg) => ({
-          selector: svg.id ? `#${svg.id}` : 'svg',
-          html: svg.outerHTML.slice(0, 200),
-        }));
+        .map((svg) => {
+          const getCssPath = (el: Element): string => {
+            if ((el as SVGElement & { id: string }).id) return '#' + (el as SVGElement & { id: string }).id;
+            const parts: string[] = [];
+            let node: Element | null = el;
+            while (node && node.tagName !== 'BODY') {
+              const parent: HTMLElement | null = node.parentElement;
+              if (!parent) break;
+              const tag = node.tagName.toLowerCase();
+              const sibs = Array.from<Element>(parent.children).filter((c) => c.tagName === (node as Element).tagName);
+              parts.unshift(sibs.length === 1 ? tag : tag + ':nth-of-type(' + (sibs.indexOf(node as Element) + 1) + ')');
+              if ((parent as HTMLElement).id) { parts.unshift('#' + (parent as HTMLElement).id); break; }
+              node = parent;
+            }
+            return parts.join(' > ') || el.tagName.toLowerCase();
+          };
+          return { selector: getCssPath(svg), html: svg.outerHTML.slice(0, 200) };
+        });
     },
   },
   {
@@ -64,9 +78,103 @@ export const textAlternativeRules: Rule[] = [
       const objects = Array.from(document.querySelectorAll('object'));
       return objects
         .filter((obj) => !obj.textContent?.trim())
-        .map((obj) => ({
-          selector: obj.id ? `#${obj.id}` : 'object',
-          html: obj.outerHTML.slice(0, 200),
+        .map((obj) => {
+          const getCssPath = (el: Element): string => {
+            if ((el as HTMLElement).id) return '#' + (el as HTMLElement).id;
+            const parts: string[] = [];
+            let node: Element | null = el;
+            while (node && node.tagName !== 'BODY') {
+              const parent: HTMLElement | null = node.parentElement;
+              if (!parent) break;
+              const tag = node.tagName.toLowerCase();
+              const sibs = Array.from<Element>(parent.children).filter((c) => c.tagName === (node as Element).tagName);
+              parts.unshift(sibs.length === 1 ? tag : tag + ':nth-of-type(' + (sibs.indexOf(node as Element) + 1) + ')');
+              if (parent.id) { parts.unshift('#' + parent.id); break; }
+              node = parent;
+            }
+            return parts.join(' > ') || el.tagName.toLowerCase();
+          };
+          return { selector: getCssPath(obj), html: obj.outerHTML.slice(0, 200) };
+        });
+    },
+  },
+  {
+    id: 'role-img-alt',
+    wcag: '1.1.1',
+    level: 'A',
+    impact: 'serious',
+    description: 'Elements with role="img" must have an accessible name',
+    check: () => {
+      const getCssPath = (el: Element): string => {
+        if ((el as HTMLElement).id) return '#' + (el as HTMLElement).id;
+        const parts: string[] = [];
+        let node: Element | null = el;
+        while (node && node.tagName !== 'BODY') {
+          const parent: HTMLElement | null = node.parentElement;
+          if (!parent) break;
+          const tag = node.tagName.toLowerCase();
+          const sibs = Array.from<Element>(parent.children).filter((c) => c.tagName === (node as Element).tagName);
+          parts.unshift(sibs.length === 1 ? tag : tag + ':nth-of-type(' + (sibs.indexOf(node as Element) + 1) + ')');
+          if (parent.id) { parts.unshift('#' + parent.id); break; }
+          node = parent;
+        }
+        return parts.join(' > ') || el.tagName.toLowerCase();
+      };
+      const els = Array.from(document.querySelectorAll('[role="img"]'));
+      return els
+        .filter((el) => {
+          if (el.getAttribute('aria-hidden') === 'true') return false;
+          const ariaLabel = el.getAttribute('aria-label')?.trim() ?? '';
+          const ariaLabelledby = el.getAttribute('aria-labelledby');
+          const labelledEl = ariaLabelledby ? document.getElementById(ariaLabelledby) : null;
+          return !ariaLabel && !labelledEl?.textContent?.trim();
+        })
+        .map((el) => ({ selector: getCssPath(el), html: el.outerHTML.slice(0, 200) }));
+    },
+  },
+  {
+    id: 'image-redundant-alt',
+    wcag: '1.1.1',
+    level: 'A',
+    impact: 'minor',
+    description: 'Image alt text must not duplicate text that is already visible nearby',
+    check: () => {
+      const getCssPath = (el: Element): string => {
+        if ((el as HTMLElement).id) return '#' + (el as HTMLElement).id;
+        const parts: string[] = [];
+        let node: Element | null = el;
+        while (node && node.tagName !== 'BODY') {
+          const parent: HTMLElement | null = node.parentElement;
+          if (!parent) break;
+          const tag = node.tagName.toLowerCase();
+          const sibs = Array.from<Element>(parent.children).filter((c) => c.tagName === (node as Element).tagName);
+          parts.unshift(sibs.length === 1 ? tag : tag + ':nth-of-type(' + (sibs.indexOf(node as Element) + 1) + ')');
+          if (parent.id) { parts.unshift('#' + parent.id); break; }
+          node = parent;
+        }
+        return parts.join(' > ') || el.tagName.toLowerCase();
+      };
+      const images = Array.from(document.querySelectorAll('img[alt]'));
+      return images
+        .filter((img) => {
+          const alt = (img.getAttribute('alt') ?? '').trim().toLowerCase();
+          if (!alt) return false;
+          const parent = img.parentElement;
+          if (!parent) return false;
+          // Get sibling/adjacent text, excluding the img alt itself
+          const siblingText = Array.from(parent.childNodes)
+            .filter((n) => n !== img && n.nodeType === Node.TEXT_NODE)
+            .map((n) => n.textContent ?? '')
+            .join(' ')
+            .trim()
+            .toLowerCase();
+          const adjacentLabel = parent.querySelector('figcaption, caption');
+          const captionText = (adjacentLabel?.textContent ?? '').trim().toLowerCase();
+          return siblingText.includes(alt) || captionText.includes(alt);
+        })
+        .map((img) => ({
+          selector: getCssPath(img),
+          html: img.outerHTML.slice(0, 200),
         }));
     },
   },

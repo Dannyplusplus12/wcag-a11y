@@ -26,3 +26,37 @@ describe('label-missing rule', () => {
     expect(violations.some((v: { selector: string }) => v.selector.includes('labeled-input'))).toBe(false);
   });
 });
+
+describe('label-empty rule', () => {
+  it('detects label elements with no text content', async () => {
+    const rule = formRules.find((r) => r.id === 'label-empty')!;
+    const violations = await page.evaluate(
+      ({ checkFn }) => new Function(`return (${checkFn})`)()(),
+      { checkFn: rule.check.toString() }
+    );
+    expect(violations.length).toBeGreaterThan(0);
+  });
+});
+
+describe('error-identification rule', () => {
+  it('detects aria-invalid inputs without a linked error message', async () => {
+    const rule = formRules.find((r) => r.id === 'error-identification')!;
+    const violations = await page.evaluate(
+      ({ checkFn }) => new Function(`return (${checkFn})`)()(),
+      { checkFn: rule.check.toString() }
+    );
+    expect(violations.some((v: { selector: string }) => v.selector.includes('invalid-no-desc'))).toBe(true);
+    expect(violations.some((v: { selector: string }) => v.selector.includes('invalid-with-desc'))).toBe(false);
+  });
+});
+
+describe('autocomplete rule', () => {
+  it('detects email inputs missing autocomplete attribute', async () => {
+    const rule = formRules.find((r) => r.id === 'autocomplete')!;
+    const violations = await page.evaluate(
+      ({ checkFn }) => new Function(`return (${checkFn})`)()(),
+      { checkFn: rule.check.toString() }
+    );
+    expect(violations.some((v: { selector: string }) => v.selector.includes('labeled-input'))).toBe(true);
+  });
+});

@@ -36,7 +36,7 @@ export function generateMarkdownReport(result: ScanResult, fixes: AIFix[], outpu
     }
 
     for (const v of page.violations) {
-      const fix = fixes.find((f) => f.ruleId === v.ruleId && v.selector.includes(f.selector?.split(' ')[0] ?? ''));
+      const fix = fixes.find((f) => f.ruleId === v.ruleId);
       lines.push(
         `### ${IMPACT_EMOJI[v.impact] ?? '⚪'} [${v.impact.toUpperCase()}] ${v.description}`,
         '',

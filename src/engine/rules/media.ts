@@ -8,13 +8,25 @@ export const mediaRules: Rule[] = [
     impact: 'critical',
     description: '<video> elements must have a caption track',
     check: () => {
+      const getCssPath = (el: Element): string => {
+        if ((el as HTMLElement).id) return '#' + (el as HTMLElement).id;
+        const parts: string[] = [];
+        let node: Element | null = el;
+        while (node && node.tagName !== 'BODY') {
+          const parent: HTMLElement | null = node.parentElement;
+          if (!parent) break;
+          const tag = node.tagName.toLowerCase();
+          const sibs = Array.from<Element>(parent.children).filter((c) => c.tagName === (node as Element).tagName);
+          parts.unshift(sibs.length === 1 ? tag : tag + ':nth-of-type(' + (sibs.indexOf(node as Element) + 1) + ')');
+          if (parent.id) { parts.unshift('#' + parent.id); break; }
+          node = parent;
+        }
+        return parts.join(' > ') || el.tagName.toLowerCase();
+      };
       const videos = Array.from(document.querySelectorAll('video'));
       return videos
         .filter((v) => !v.querySelector('track[kind="captions"], track[kind="subtitles"]'))
-        .map((v) => ({
-          selector: (v as HTMLElement).id ? `#${(v as HTMLElement).id}` : 'video',
-          html: v.outerHTML.slice(0, 200),
-        }));
+        .map((v) => ({ selector: getCssPath(v), html: v.outerHTML.slice(0, 200) }));
     },
   },
   {
@@ -24,13 +36,25 @@ export const mediaRules: Rule[] = [
     impact: 'serious',
     description: '<video> elements should have an audio description track',
     check: () => {
+      const getCssPath = (el: Element): string => {
+        if ((el as HTMLElement).id) return '#' + (el as HTMLElement).id;
+        const parts: string[] = [];
+        let node: Element | null = el;
+        while (node && node.tagName !== 'BODY') {
+          const parent: HTMLElement | null = node.parentElement;
+          if (!parent) break;
+          const tag = node.tagName.toLowerCase();
+          const sibs = Array.from<Element>(parent.children).filter((c) => c.tagName === (node as Element).tagName);
+          parts.unshift(sibs.length === 1 ? tag : tag + ':nth-of-type(' + (sibs.indexOf(node as Element) + 1) + ')');
+          if (parent.id) { parts.unshift('#' + parent.id); break; }
+          node = parent;
+        }
+        return parts.join(' > ') || el.tagName.toLowerCase();
+      };
       const videos = Array.from(document.querySelectorAll('video'));
       return videos
         .filter((v) => !v.querySelector('track[kind="descriptions"]'))
-        .map((v) => ({
-          selector: (v as HTMLElement).id ? `#${(v as HTMLElement).id}` : 'video',
-          html: v.outerHTML.slice(0, 200),
-        }));
+        .map((v) => ({ selector: getCssPath(v), html: v.outerHTML.slice(0, 200) }));
     },
   },
   {
@@ -40,16 +64,28 @@ export const mediaRules: Rule[] = [
     impact: 'serious',
     description: '<audio> elements should have a linked transcript',
     check: () => {
+      const getCssPath = (el: Element): string => {
+        if ((el as HTMLElement).id) return '#' + (el as HTMLElement).id;
+        const parts: string[] = [];
+        let node: Element | null = el;
+        while (node && node.tagName !== 'BODY') {
+          const parent: HTMLElement | null = node.parentElement;
+          if (!parent) break;
+          const tag = node.tagName.toLowerCase();
+          const sibs = Array.from<Element>(parent.children).filter((c) => c.tagName === (node as Element).tagName);
+          parts.unshift(sibs.length === 1 ? tag : tag + ':nth-of-type(' + (sibs.indexOf(node as Element) + 1) + ')');
+          if (parent.id) { parts.unshift('#' + parent.id); break; }
+          node = parent;
+        }
+        return parts.join(' > ') || el.tagName.toLowerCase();
+      };
       const audios = Array.from(document.querySelectorAll('audio'));
       return audios
         .filter((a) => {
           const describedBy = a.getAttribute('aria-describedby');
           return !describedBy || !document.getElementById(describedBy);
         })
-        .map((a) => ({
-          selector: (a as HTMLElement).id ? `#${(a as HTMLElement).id}` : 'audio',
-          html: a.outerHTML.slice(0, 200),
-        }));
+        .map((a) => ({ selector: getCssPath(a), html: a.outerHTML.slice(0, 200) }));
     },
   },
 ];

@@ -15,7 +15,7 @@ npx wcag-a11y scan -u http://localhost:3000 --ai --report   # after build
 
 **Rule serialization** — `Rule.check()` functions are serialized with `.toString()` and run inside `page.evaluate()` via `new Function(...)`. They MUST be pure: no imports, no closures, no references to outer scope. They return `Array<{selector: string; html: string}>` only — the engine adds all other metadata.
 
-**AI providers** — `GeminiProvider` and `OllamaProvider` both implement `AIProvider`. Selected via `a11y.config.json`. Gemini uses `gemini-2.0-flash` (free tier). Fallback generates `optimalPrompt` from violation data if the AI response is unparseable.
+**AI providers** — `GeminiProvider` and `OllamaProvider` both implement `AIProvider`. Selected via `a11y.config.json`. Gemini uses `gemini-2.5-flash` (free tier). Fallback generates `optimalPrompt` from violation data if the AI response is unparseable.
 
 **optimalPrompt** — the core value prop: each violation gets a ready-to-paste prompt developers give Cursor/Copilot/Claude to fix the issue automatically.
 

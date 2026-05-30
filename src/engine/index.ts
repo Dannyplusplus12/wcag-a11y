@@ -9,6 +9,7 @@ import { structureRules } from './rules/structure.js';
 import { linkRules } from './rules/links.js';
 import { languageRules } from './rules/language.js';
 import { mediaRules } from './rules/media.js';
+import { tableRules } from './rules/tables.js';
 
 const ALL_RULES = [
   ...textAlternativeRules,
@@ -20,6 +21,7 @@ const ALL_RULES = [
   ...linkRules,
   ...languageRules,
   ...mediaRules,
+  ...tableRules,
 ];
 
 export async function scanPage(page: Page, url: string): Promise<PageScanResult> {
@@ -30,7 +32,9 @@ export async function scanPage(page: Page, url: string): Promise<PageScanResult>
     const ruleViolations = await page.evaluate(
       ({ checkFn, meta }) => {
         // eslint-disable-next-line no-new-func
-        const fn = new Function(`return (${checkFn})`)() as () => Array<{
+        // __name is injected by esbuild/tsx at compile time but is not available
+        // inside page.evaluate's isolated context — provide a no-op shim.
+        const fn = new Function(`var __name=(t,_)=>t; return (${checkFn})`)() as () => Array<{
           selector: string;
           html: string;
         }>;

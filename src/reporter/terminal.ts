@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import type { ScanResult } from '../engine/types.js';
+import type { AIFix } from '../ai/types.js';
 
 const IMPACT_COLOR: Record<string, (s: string) => string> = {
   critical: chalk.red,
@@ -42,4 +43,29 @@ export function printTerminalReport(result: ScanResult): void {
   console.log('\n' + chalk.gray('─'.repeat(60)));
   console.log(`Total: ${chalk.red(result.criticalCount + ' critical')} · ${chalk.yellow(result.seriousCount + ' serious')} · ${chalk.blue(result.moderateCount + ' moderate')}`);
   console.log(chalk.gray('Run with --report to save a full markdown report with AI fix suggestions.\n'));
+}
+
+export function printAIPrompts(fixes: AIFix[], opts: { explain: boolean }): void {
+  if (fixes.length === 0) return;
+
+  console.log('\n' + chalk.bold.magenta('AI Fix Prompts') + chalk.gray(' — paste any of these into Cursor, Copilot, or Claude'));
+  console.log(chalk.gray('─'.repeat(60)));
+
+  for (const fix of fixes) {
+    const countLabel = fix.instanceCount > 1 ? chalk.gray(` × ${fix.instanceCount} instances`) : '';
+    console.log('\n' + chalk.bold(`[${fix.ruleId}]`) + countLabel);
+    for (const sel of fix.selectors) {
+      console.log(chalk.gray(`  → ${sel}`));
+    }
+    if (opts.explain && fix.explanation) {
+      console.log(chalk.gray(fix.explanation));
+    }
+    console.log(chalk.cyan('┌─ Copy this prompt ──────────────────────────────────────'));
+    for (const line of fix.optimalPrompt.split('\n')) {
+      console.log(chalk.cyan('│ ') + line);
+    }
+    console.log(chalk.cyan('└─────────────────────────────────────────────────────────'));
+  }
+
+  console.log('');
 }

@@ -3,33 +3,37 @@ import type { AIProvider, AIFix } from './types.js';
 import { buildPrompt } from './prompt.js';
 import { groupViolations, type ViolationGroup } from './group.js';
 
-export class GeminiProvider implements AIProvider {
-  constructor(private apiKey: string, private model = 'gemini-2.5-flash') {}
+export class OpenAIProvider implements AIProvider {
+  constructor(private apiKey: string, private model = 'gpt-4o-mini') {}
 
   async generateFixes(violations: Violation[], strategy: 'rule' | 'none' = 'rule'): Promise<AIFix[]> {
     if (violations.length === 0) return [];
 
     const groups = groupViolations(violations, strategy);
     const prompt = buildPrompt(groups);
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
 
-    const response = await fetch(url, {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`,
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 8192 },
+        model: this.model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.2,
+        max_tokens: 8192,
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status} ${await response.text()}`);
+      throw new Error(`OpenAI API error: ${response.status} ${await response.text()}`);
     }
 
     const data = await response.json() as {
-      candidates: Array<{ content: { parts: Array<{ text: string }> } }>;
+      choices: Array<{ message: { content: string } }>;
     };
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '[]';
+    const text = data.choices?.[0]?.message?.content ?? '[]';
     return this.parse(text, groups);
   }
 
