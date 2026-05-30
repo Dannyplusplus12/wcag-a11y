@@ -2,21 +2,59 @@
 
 [![CI](https://github.com/Dannyplusplus12/WCAG-A11y/actions/workflows/ci.yml/badge.svg)](https://github.com/Dannyplusplus12/WCAG-A11y/actions/workflows/ci.yml)
 
-WCAG 2.1/2.2 accessibility CLI auditor with AI-powered fixes. Crawls your running dev server with Playwright, runs a custom rule engine across 40+ checks, and generates ready-to-paste prompts for Cursor, Copilot, or Claude — so you can fix issues without leaving your editor.
+Most accessibility auditors stop at detection — they tell you *what* is broken and leave the rest to you. `wcag-a11y` goes further. It crawls your running dev server with Playwright, runs 40+ WCAG 2.1/2.2 checks, and uses AI to generate a ready-to-paste fix prompt for each violation. You paste it into Cursor, Copilot, or Claude and the fix writes itself.
+
+The goal is to close the loop between finding an accessibility issue and actually fixing it, without interrupting your existing workflow.
+
+---
 
 ## Try it instantly
 
-No dev server needed. Scans a built-in page with intentional violations:
+No dev server, no config, no setup:
 
 ```bash
 npx wcag-a11y demo
 ```
 
-With AI fixes (requires a config file — see Setup):
+---
 
-```bash
-npx wcag-a11y demo --ai
+## What the output looks like
+
+Running a scan prints a violation summary per page, then AI-generated fixes for each rule:
+
 ```
+Scanning http://localhost:3000...
+
+  /
+  ✖  critical   img-alt                  3 violations
+  ✖  serious    color-contrast-text      2 violations
+  ✖  serious    label-missing            1 violation
+  ✖  moderate   no-positive-tabindex     1 violation
+
+  7 violations across 1 page
+
+Generating AI fixes for 7 violations...
+
+────────────────────────────────────────────
+[img-alt] — 3 elements affected
+  #hero-img  #logo  #banner
+
+  Why it matters:
+  Screen readers cannot describe the image to blind users without an alt attribute.
+  Users relying on assistive technology receive no information about the image content.
+
+  Fixed HTML:
+  <img src="banner.jpg" alt="Summer sale — up to 50% off">
+
+  Prompt for your AI editor:
+  Fix accessibility: 3 <img> elements (#hero-img, #logo, #banner) are missing alt
+  attributes, violating WCAG 1.1.1. Add descriptive alt text to each image.
+────────────────────────────────────────────
+```
+
+The **prompt** at the end of each fix is what you copy into Cursor, Copilot, or Claude. It includes the affected selectors, the WCAG rule, and exactly what needs to change — no rewriting needed.
+
+With `--report`, the full output is also saved to `a11y-report.md`.
 
 ---
 
@@ -38,7 +76,7 @@ Each command creates an `a11y.config.json` pre-wired for that provider. Fill in 
 
 **Get a free Gemini key:** https://aistudio.google.com  
 **Get an OpenAI key:** https://platform.openai.com/api-keys  
-**Ollama (local):** install from https://ollama.com then run `ollama serve`
+**Ollama (local):** install from https://ollama.com, then run `ollama serve`
 
 ---
 
@@ -46,34 +84,34 @@ Each command creates an `a11y.config.json` pre-wired for that provider. Fill in 
 
 ### `wcag-a11y demo`
 
-Scan a built-in demo page with 10 intentional violations. No dev server or config required.
+Scan a built-in page with 10 intentional violations. No dev server or config required — useful for trying the tool before pointing it at your own project.
 
 ```bash
-wcag-a11y demo                  # violations only, fast
-wcag-a11y demo --ai             # violations + AI fixes
+wcag-a11y demo                  # violations only
+wcag-a11y demo --ai             # violations + AI fixes (requires config)
 wcag-a11y demo --ai --report    # + save a11y-report.md
 ```
 
 | Flag | Description |
 |---|---|
-| `--ai` | Generate AI fix explanations and prompts |
-| `-r, --report` | Save a full markdown report to `a11y-report.md` |
+| `--ai` | Generate AI fix explanations and prompts for each violation |
+| `-r, --report` | Save the full report to `a11y-report.md` in the current directory |
 
 ---
 
 ### `wcag-a11y init`
 
-Create `a11y.config.json` in the current directory.
+Create `a11y.config.json` in the current directory, pre-configured for your chosen provider.
 
 ```bash
-wcag-a11y init                       # Gemini config (default)
-wcag-a11y init --provider openai     # OpenAI config
-wcag-a11y init --provider ollama     # Ollama config
+wcag-a11y init                       # Gemini (default)
+wcag-a11y init --provider openai     # OpenAI
+wcag-a11y init --provider ollama     # Ollama (local)
 ```
 
 | Flag | Description |
 |---|---|
-| `--provider <name>` | Provider to configure: `gemini` (default), `openai`, `ollama` |
+| `--provider <name>` | Which provider to configure: `gemini` (default), `openai`, or `ollama`. Determines which fields are written to the config file. |
 
 ---
 
@@ -82,68 +120,23 @@ wcag-a11y init --provider ollama     # Ollama config
 Scan a running dev server for accessibility violations.
 
 ```bash
-# Scan the homepage
 wcag-a11y scan -u http://localhost:3000
-
-# Scan specific pages
 wcag-a11y scan -u http://localhost:3000 --pages / /about /contact
-
-# Auto-crawl all reachable pages
-wcag-a11y scan -u http://localhost:3000 --crawl
-
-# Full scan: crawl + AI fixes + markdown report
 wcag-a11y scan -u http://localhost:3000 --crawl --ai --report
-
-# Skip AI (violations only — fast)
-wcag-a11y scan -u http://localhost:3000 --no-ai
-
-# Show prompts only, hide AI explanations
-wcag-a11y scan -u http://localhost:3000 --no-explain
-
-# Show each violation individually instead of grouping by rule
-wcag-a11y scan -u http://localhost:3000 --group none
-
-# Gate a CI pipeline — exits 1 if any violations found
 wcag-a11y scan -u http://localhost:3000 --no-ai --ci
-
-# Override provider for this run (ignores config file setting)
-wcag-a11y scan -u http://localhost:3000 --provider openai
 ```
 
 | Flag | Default | Description |
 |---|---|---|
-| `-u, --url <url>` | required | Base URL of your dev server |
-| `-p, --pages <pages...>` | `/` | Specific paths to scan |
-| `-c, --crawl` | off | Auto-discover pages by following same-origin links |
-| `-r, --report` | off | Save full markdown report to `a11y-report.md` |
-| `--ai` / `--no-ai` | on | Generate AI fix explanations and prompts |
-| `--no-explain` | off | Hide AI explanations — show `optimalPrompt` only |
-| `--group <strategy>` | `rule` | Group violations by rule (`rule`) or show individually (`none`) |
-| `--ci` | off | Exit code 1 if violations found (for CI/CD pipelines) |
-| `--provider <name>` | from config | Override AI provider: `gemini`, `openai`, `ollama` |
-
----
-
-## The core value: grouped prompts
-
-Without grouping, 5 images missing `alt` text produce 5 nearly-identical AI prompts. With `--group rule` (the default), they collapse into one actionable prompt you paste into your editor once.
-
-**`--group none`**
-```
-[img-alt] Fix #hero-img — add a descriptive alt attribute
-[img-alt] Fix #logo — add a descriptive alt attribute
-[img-alt] Fix #banner — add a descriptive alt attribute
-[img-alt] Fix #card-1 — add a descriptive alt attribute
-[img-alt] Fix #card-2 — add a descriptive alt attribute
-```
-
-**`--group rule` (default)**
-```
-[img-alt] Fix 5 violations — add descriptive alt attributes to:
-  • #hero-img  • #logo  • #banner  • #card-1  • #card-2
-```
-
-One prompt. One fix. Done.
+| `-u, --url <url>` | required | Base URL of your running dev server |
+| `-p, --pages <pages...>` | `/` | One or more paths to scan. Separate with spaces: `--pages / /about /contact` |
+| `-c, --crawl` | off | Follow same-origin links and scan all reachable pages automatically |
+| `-r, --report` | off | Save the full scan output to `a11y-report.md` |
+| `--ai` / `--no-ai` | on | Generate AI fix explanations and prompts. Use `--no-ai` for a fast violation-only scan |
+| `--no-explain` | off | Print only the ready-to-paste prompt for each fix, without the AI explanation |
+| `--group <strategy>` | `rule` | `rule` (default) groups all violations of the same type into one fix prompt. `none` produces a separate prompt per element. Use `none` when violations of the same rule need different fixes |
+| `--ci` | off | Exit with code `1` if any violations are found. Use this to fail a CI pipeline |
+| `--provider <name>` | from config | Override the AI provider for this run: `gemini`, `openai`, or `ollama`. Does not modify the config file |
 
 ---
 
@@ -155,9 +148,7 @@ One prompt. One fix. Done.
 | `openai` | `gpt-4o-mini` | Pay-per-use | [platform.openai.com](https://platform.openai.com/api-keys) |
 | `ollama` | `llama3` | Free (local) | None — run `ollama serve` |
 
-Switch providers per-run with `--provider`, or set it permanently in `a11y.config.json`.
-
-If the AI response is unparseable, the tool falls back to generating an `optimalPrompt` directly from the violation data — you always get something useful.
+Set your provider in `a11y.config.json` or override it per-run with `--provider`. If the AI response is unparseable, the tool generates a fix prompt directly from the violation data so you always get something actionable.
 
 ---
 
@@ -178,7 +169,7 @@ If the AI response is unparseable, the tool falls back to generating an `optimal
 }
 ```
 
-Only the fields for your active provider are required. The file is gitignored by default.
+Only the fields for your active provider are required. This file is gitignored by default.
 
 ---
 
