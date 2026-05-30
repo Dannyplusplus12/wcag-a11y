@@ -50,15 +50,19 @@ export class GeminiProvider implements AIProvider {
 
   private fallbackFix(g: ViolationGroup): AIFix {
     const v = g.representative;
-    const instanceNote = g.count > 1 ? ` There are ${g.count} similar instances at: ${g.selectors.join(', ')}.` : '';
+    const selectorList = g.selectors.map((s) => `- ${s}`).join('\n');
+    const explanation = `Users relying on assistive technologies are affected: ${g.description.toLowerCase()}. This fails WCAG 2.1 SC ${g.wcag} (Level ${g.level}).`;
+    const prompt = g.count > 1
+      ? `Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected elements (${g.count} instances):\n${selectorList}\n\nRepresentative HTML:\n\`${v.html.slice(0, 300)}\`\n\nApply the fix to all ${g.count} instances in the codebase to comply with WCAG 2.1 SC ${g.wcag}.`
+      : `Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected element:\n- Selector: \`${g.selectors[0]}\`\n- HTML: \`${v.html.slice(0, 300)}\`\n\nApply the fix to comply with WCAG 2.1 SC ${g.wcag}.`;
     return {
       ruleId: g.ruleId,
       selectors: g.selectors,
       instanceCount: g.count,
-      explanation: g.description,
+      explanation,
       fixedCode: v.html,
       wcagReference: `WCAG 2.1 SC ${g.wcag}`,
-      optimalPrompt: `Fix this accessibility violation: The element \`${v.html.slice(0, 120)}\` at selector \`${g.selectors[0]}\` violates ${g.wcag} — ${g.description}.${instanceNote} Please fix it in the codebase.`,
+      optimalPrompt: prompt,
     };
   }
 }

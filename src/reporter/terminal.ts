@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import type { ScanResult } from '../engine/types.js';
 import type { AIFix } from '../ai/types.js';
+import { groupViolations } from '../ai/group.js';
 
 const IMPACT_COLOR: Record<string, (s: string) => string> = {
   critical: chalk.red,
@@ -31,12 +32,17 @@ export function printTerminalReport(result: ScanResult): void {
 
     console.log(`\n  ${chalk.red('✖')}  ${url}  ${counts}`);
 
-    for (const v of page.violations) {
-      const color = IMPACT_COLOR[v.impact] ?? chalk.white;
-      const tag   = color(`[${v.impact.toUpperCase()}]`);
-      const wcag  = chalk.gray(`WCAG ${v.wcag}`);
-      console.log(`     ${tag} ${v.description}  ${wcag}`);
-      console.log(`     ${chalk.gray('→')} ${chalk.dim(v.selector)}`);
+    const groups = groupViolations(page.violations, 'rule');
+    for (const g of groups) {
+      const color = IMPACT_COLOR[g.impact] ?? chalk.white;
+      const countSuffix = g.count > 1 ? chalk.gray(` ×${g.count}`) : '';
+      const tag  = color(`[${g.impact.toUpperCase()}]`) + countSuffix;
+      const wcag = chalk.gray(`WCAG ${g.wcag}`);
+      console.log(`     ${tag} ${g.description}  ${wcag}`);
+      console.log(`     ${chalk.gray('→')} ${chalk.dim(g.selectors[0])}`);
+      if (g.count > 1) {
+        console.log(`     ${chalk.gray(`   …and ${g.count - 1} more`)}`);
+      }
     }
   }
 
@@ -45,8 +51,17 @@ export function printTerminalReport(result: ScanResult): void {
   console.log(chalk.gray('Run with --report to save a full markdown report with AI fix suggestions.\n'));
 }
 
-export function printAIPrompts(fixes: AIFix[], opts: { explain: boolean }): void {
+export function printAIPrompts(fixes: AIFix[], opts: { explain: boolean; fastMode?: boolean }): void {
   if (fixes.length === 0) return;
+
+  if (opts.fastMode) {
+    for (let i = 0; i < fixes.length; i++) {
+      console.log(fixes[i].optimalPrompt);
+      if (i < fixes.length - 1) console.log('\n' + chalk.gray('─'.repeat(60)));
+    }
+    console.log('');
+    return;
+  }
 
   console.log('\n' + chalk.bold.magenta('AI Fix Prompts') + chalk.gray(' — paste any of these into Cursor, Copilot, or Claude'));
   console.log(chalk.gray('─'.repeat(60)));

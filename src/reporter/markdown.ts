@@ -9,7 +9,36 @@ const IMPACT_EMOJI: Record<string, string> = {
   minor: '🟢',
 };
 
-export function generateMarkdownReport(result: ScanResult, fixes: AIFix[], outputPath = 'a11y-report.md'): void {
+export function generateMarkdownReport(result: ScanResult, fixes: AIFix[], opts: { fastMode?: boolean } = {}, outputPath = 'a11y-report.md'): void {
+  const lines = opts.fastMode
+    ? buildFastReport(fixes)
+    : buildFullReport(result, fixes);
+
+  writeFileSync(outputPath, lines.join('\n'), 'utf-8');
+  console.log(`\nReport saved → ${outputPath}`);
+}
+
+function buildFastReport(fixes: AIFix[]): string[] {
+  const lines: string[] = [
+    '# WCAG A11y — Fix Prompts',
+    `> Generated: ${new Date().toLocaleString()}`,
+    '',
+  ];
+
+  for (const fix of fixes) {
+    const countLabel = fix.instanceCount > 1 ? ` ×${fix.instanceCount}` : '';
+    lines.push(`## \`${fix.ruleId}\`${countLabel}`, '');
+    lines.push('**Selectors:**');
+    for (const sel of fix.selectors) {
+      lines.push(`- \`${sel}\``);
+    }
+    lines.push('', '```', fix.optimalPrompt, '```', '', '---', '');
+  }
+
+  return lines;
+}
+
+function buildFullReport(result: ScanResult, fixes: AIFix[]): string[] {
   const lines: string[] = [
     '# WCAG A11y Report',
     `> Generated: ${new Date().toLocaleString()}`,
@@ -73,6 +102,5 @@ export function generateMarkdownReport(result: ScanResult, fixes: AIFix[], outpu
     }
   }
 
-  writeFileSync(outputPath, lines.join('\n'), 'utf-8');
-  console.log(`\nReport saved → ${outputPath}`);
+  return lines;
 }
