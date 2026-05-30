@@ -1,6 +1,29 @@
-import { chromium } from 'playwright';
+import { chromium, type Page } from 'playwright';
 import { scanPage } from './engine/index.js';
 import type { ScanResult, PageScanResult } from './engine/types.js';
+
+async function detectFramework(page: Page): Promise<string | undefined> {
+  try {
+    return await page.evaluate((): string | undefined => {
+      const w = window as unknown as Record<string, unknown>;
+      if (w['__NEXT_DATA__']) return 'Next.js';
+      if (w['___gatsby']) return 'Gatsby';
+      if (w['__remixContext']) return 'Remix';
+      if (w['__nuxt'] || w['$nuxt']) return 'Nuxt.js';
+      if (w['__vue_app__']) return 'Vue 3';
+      if (w['Vue']) return 'Vue 2';
+      if (document.querySelector('[ng-version]') !== null) return 'Angular';
+      const root = document.getElementById('root') ?? document.getElementById('app') ?? document.body;
+      if (root && Object.keys(root).some((k) => k.startsWith('__reactFiber') || k.startsWith('__reactContainer'))) {
+        return 'React';
+      }
+      if (document.querySelector('[data-svelte-h]') !== null) return 'Svelte';
+      return undefined;
+    });
+  } catch {
+    return undefined;
+  }
+}
 
 export interface CrawlOptions {
   url: string;
@@ -35,11 +58,13 @@ export async function crawl(options: CrawlOptions): Promise<ScanResult> {
     }
 
     const results: PageScanResult[] = [];
+    let framework: string | undefined;
 
     for (const pageUrl of pagesToVisit) {
       const page = await context.newPage();
       try {
         await page.goto(pageUrl, { waitUntil: 'networkidle', timeout: 30000 });
+        if (!framework) framework = await detectFramework(page);
         const result = await scanPage(page, pageUrl);
         results.push(result);
       } catch (err) {
@@ -58,6 +83,7 @@ export async function crawl(options: CrawlOptions): Promise<ScanResult> {
       seriousCount: allViolations.filter((v) => v.impact === 'serious').length,
       moderateCount: allViolations.filter((v) => v.impact === 'moderate').length,
       minorCount: allViolations.filter((v) => v.impact === 'minor').length,
+      framework,
     };
   } finally {
     await browser.close();

@@ -23,13 +23,14 @@ describe('generateMarkdownReport', () => {
       totalViolations: 1, criticalCount: 1, seriousCount: 0, moderateCount: 0, minorCount: 0,
     };
     const fixes: AIFix[] = [{
-      ruleId: 'img-alt', selector: '#missing-alt',
+      ruleId: 'img-alt', selectors: ['#missing-alt'], instanceCount: 1,
       explanation: 'Screen readers cannot describe this image to blind users.',
       fixedCode: '<img src="photo.jpg" id="missing-alt" alt="Description of image">',
       wcagReference: 'WCAG 2.1 SC 1.1.1 — Non-text Content',
+      optimalPrompt: 'Fix img-alt violation at #missing-alt.',
     }];
 
-    generateMarkdownReport(result, fixes, TEST_OUTPUT);
+    generateMarkdownReport(result, fixes, {}, TEST_OUTPUT);
     const content = readFileSync(TEST_OUTPUT, 'utf-8');
 
     expect(content).toContain('WCAG A11y Report');

@@ -7,11 +7,11 @@ import { fallbackExplanation } from './fallback-explanation.js';
 export class OllamaProvider implements AIProvider {
   constructor(private baseUrl = 'http://localhost:11434', private model = 'llama3') {}
 
-  async generateFixes(violations: Violation[], strategy: 'rule' | 'none' = 'rule'): Promise<AIFix[]> {
+  async generateFixes(violations: Violation[], strategy: 'rule' | 'none' = 'rule', framework?: string): Promise<AIFix[]> {
     if (violations.length === 0) return [];
 
     const groups = groupViolations(violations, strategy);
-    const prompt = buildPrompt(groups);
+    const prompt = buildPrompt(groups, framework);
     const response = await fetch(`${this.baseUrl}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -27,30 +27,31 @@ export class OllamaProvider implements AIProvider {
 
     try {
       const jsonMatch = text.match(/\[[\s\S]*\]/);
-      if (!jsonMatch) return this.fallback(groups);
+      if (!jsonMatch) return this.fallback(groups, framework);
       const fixes: AIFix[] = JSON.parse(jsonMatch[0]);
       return groups.map((g) => {
         const found = fixes.find((f) => f.ruleId === g.ruleId);
         return found
           ? { ...found, selectors: g.selectors, instanceCount: g.count }
-          : this.fallbackFix(g);
+          : this.fallbackFix(g, framework);
       });
     } catch {
-      return this.fallback(groups);
+      return this.fallback(groups, framework);
     }
   }
 
-  private fallback(groups: ViolationGroup[]): AIFix[] {
-    return groups.map((g) => this.fallbackFix(g));
+  private fallback(groups: ViolationGroup[], framework?: string): AIFix[] {
+    return groups.map((g) => this.fallbackFix(g, framework));
   }
 
-  private fallbackFix(g: ViolationGroup): AIFix {
+  private fallbackFix(g: ViolationGroup, framework?: string): AIFix {
     const v = g.representative;
     const selectorList = g.selectors.map((s) => `- ${s}`).join('\n');
     const explanation = fallbackExplanation(g.ruleId, g.description, g.wcag, g.level);
+    const fwNote = framework ? `This project uses ${framework}. ` : '';
     const prompt = g.count > 1
-      ? `Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected elements (${g.count} instances):\n${selectorList}\n\nRepresentative HTML:\n\`${v.html.slice(0, 300)}\`\n\nApply the fix to all ${g.count} instances in the codebase to comply with WCAG 2.1 SC ${g.wcag}.`
-      : `Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected element:\n- Selector: \`${g.selectors[0]}\`\n- HTML: \`${v.html.slice(0, 300)}\`\n\nApply the fix to comply with WCAG 2.1 SC ${g.wcag}.`;
+      ? `${fwNote}Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected elements (${g.count} instances):\n${selectorList}\n\nRepresentative HTML:\n\`${v.html.slice(0, 300)}\`\n\nApply the fix to all ${g.count} instances in the codebase to comply with WCAG 2.1 SC ${g.wcag}.`
+      : `${fwNote}Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected element:\n- Selector: \`${g.selectors[0]}\`\n- HTML: \`${v.html.slice(0, 300)}\`\n\nApply the fix to comply with WCAG 2.1 SC ${g.wcag}.`;
     return {
       ruleId: g.ruleId,
       selectors: g.selectors,

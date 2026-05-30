@@ -11,5 +11,5 @@ export interface AIFix {
 }
 
 export interface AIProvider {
-  generateFixes(violations: Violation[], strategy: 'rule' | 'none'): Promise<AIFix[]>;
+  generateFixes(violations: Violation[], strategy: 'rule' | 'none', framework?: string): Promise<AIFix[]>;
 }

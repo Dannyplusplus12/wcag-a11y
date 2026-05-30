@@ -33,4 +33,5 @@ export interface ScanResult {
   seriousCount: number;
   moderateCount: number;
   minorCount: number;
+  framework?: string;
 }

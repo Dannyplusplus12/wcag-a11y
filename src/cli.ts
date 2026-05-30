@@ -61,7 +61,7 @@ program
         if (!opts.fastMode) {
           console.log(`\nGenerating AI fixes for ${ruleGroups.length} rule groups (${allViolations.length} violations)...`);
         }
-        const fixes = await provider.generateFixes(allViolations, strategy);
+        const fixes = await provider.generateFixes(allViolations, strategy, result.framework);
 
         if (opts.terminal) {
           printAIPrompts(fixes, { explain: opts.explain, fastMode: opts.fastMode });

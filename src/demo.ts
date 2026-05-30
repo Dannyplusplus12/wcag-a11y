@@ -82,7 +82,7 @@ export async function runDemo(opts: { ai: boolean; report: boolean }): Promise<v
       const violations = result.pages.flatMap((p) => p.violations);
 
       console.log(`\nGenerating AI fixes for ${violations.length} violations...`);
-      const fixes = await provider.generateFixes(violations, 'rule');
+      const fixes = await provider.generateFixes(violations, 'rule', result.framework);
       printAIPrompts(fixes, { explain: true });
 
       if (opts.report) generateMarkdownReport(result, fixes);
