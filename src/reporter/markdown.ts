@@ -64,21 +64,41 @@ function buildFullReport(result: ScanResult, fixes: AIFix[]): string[] {
       continue;
     }
 
+    // Group violations by ruleId so grouped fixes aren't repeated per instance
+    const byRule = new Map<string, typeof page.violations>();
     for (const v of page.violations) {
+      const group = byRule.get(v.ruleId) ?? [];
+      group.push(v);
+      byRule.set(v.ruleId, group);
+    }
+
+    for (const group of byRule.values()) {
+      const v = group[0];
       const fix = fixes.find((f) => f.ruleId === v.ruleId);
+      const others = group.slice(1);
+
       lines.push(
         `### ${IMPACT_EMOJI[v.impact] ?? '⚪'} [${v.impact.toUpperCase()}] ${v.description}`,
         '',
         `**Rule:** \`${v.ruleId}\`  `,
         `**WCAG:** ${fix?.wcagReference ?? `SC ${v.wcag} (Level ${v.level})`}  `,
-        `**Selector:** \`${v.selector}\``,
+        `**Instances:** ${group.length}`,
         '',
-        '**Violating element:**',
+        '**Representative element:**',
+        `\`${v.selector}\``,
         '```html',
         v.html,
         '```',
         '',
       );
+
+      if (others.length > 0) {
+        lines.push(`**Also affects ${others.length} more element${others.length > 1 ? 's' : ''} on this page:**`);
+        for (const o of others) {
+          lines.push(`- \`${o.selector}\``);
+        }
+        lines.push('');
+      }
 
       if (fix) {
         lines.push(
