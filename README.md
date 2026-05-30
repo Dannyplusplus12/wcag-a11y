@@ -87,14 +87,14 @@ Each command creates an `a11y.config.json` pre-wired for that provider. Fill in 
 Scan a built-in page with 10 intentional violations. No dev server or config required — useful for trying the tool before pointing it at your own project.
 
 ```bash
-wcag-a11y demo                  # violations only
-wcag-a11y demo --ai             # violations + AI fixes (requires config)
-wcag-a11y demo --ai --report    # + save a11y-report.md
+wcag-a11y demo                  # violations + AI fixes (default, requires config)
+wcag-a11y demo --no-ai          # violations only, no AI — faster
+wcag-a11y demo --report         # + save a11y-report.md
 ```
 
 | Flag | Description |
 |---|---|
-| `--ai` | Generate AI fix explanations and prompts for each violation |
+| `--no-ai` | Skip AI fix generation — prints violations only, no prompts |
 | `-r, --report` | Save the full report to `a11y-report.md` in the current directory |
 
 ---
@@ -122,7 +122,7 @@ Scan a running dev server for accessibility violations.
 ```bash
 wcag-a11y scan -u http://localhost:3000
 wcag-a11y scan -u http://localhost:3000 --pages / /about /contact
-wcag-a11y scan -u http://localhost:3000 --crawl --ai --report
+wcag-a11y scan -u http://localhost:3000 --crawl --report
 wcag-a11y scan -u http://localhost:3000 --no-ai --ci
 ```
 
@@ -132,7 +132,7 @@ wcag-a11y scan -u http://localhost:3000 --no-ai --ci
 | `-p, --pages <pages...>` | `/` | One or more paths to scan. Separate with spaces: `--pages / /about /contact` |
 | `-c, --crawl` | off | Follow same-origin links and scan all reachable pages automatically |
 | `-r, --report` | off | Save the full scan output to `a11y-report.md` |
-| `--ai` / `--no-ai` | on | Generate AI fix explanations and prompts. Use `--no-ai` for a fast violation-only scan |
+| `--no-ai` | on | Skip AI fix generation — scan runs faster and prints violations only |
 | `--no-explain` | off | Print only the ready-to-paste prompt for each fix, without the AI explanation |
 | `--group <strategy>` | `rule` | `rule` (default) groups all violations of the same type into one fix prompt. `none` produces a separate prompt per element. Use `none` when violations of the same rule need different fixes |
 | `--ci` | off | Exit with code `1` if any violations are found. Use this to fail a CI pipeline |
