@@ -158,11 +158,15 @@ wcag-a11y fix -u http://localhost:3000 --apply
 
 # Auto-discover pages + write fixes
 wcag-a11y fix -u http://localhost:3000 --crawl --apply
+
+# Skip rescanning — load violations from an existing report
+wcag-a11y fix --from-report
+wcag-a11y fix --from-report ./reports/a11y-report.md --apply
 ```
 
 **How it works:**
 
-1. Runs the same scan as `wcag-a11y scan`
+1. Runs the same scan as `wcag-a11y scan` (or loads an existing report with `--from-report`)
 2. For each violation, locates the source file — checks `violation.source` (React dev mode) first, then falls back to grepping `./src` for unique identifiers in the HTML snippet (`id=`, `name=`, `for=`, local `src=`, text content)
 3. Groups violations by file (multiple violations in the same file → one AI call)
 4. Sends the full file content + violation list to your configured AI provider and asks for the corrected file
@@ -186,13 +190,21 @@ src/components/Navbar.jsx — 2 violation(s)
 
 | Flag | Default | Description |
 |---|---|---|
-| `-u, --url <url>` | required | Base URL of your running dev server |
+| `-u, --url <url>` | — | Base URL of your running dev server. Required unless `--from-report` is used |
 | `-p, --pages <pages...>` | `/` | Specific pages to scan |
 | `-c, --crawl` | off | Auto-discover pages by following same-origin links |
+| `--from-report [path]` | `a11y-report.md` | Load violations from an existing report instead of scanning. Useful when you already ran `scan --report` and just want to apply fixes |
 | `--apply` | off | Write patched files to disk (dry-run without this flag) |
 | `--provider <name>` | from config | Override AI provider for this run: `gemini`, `openai`, or `ollama` |
 
 > **Tip:** Always run without `--apply` first to review the diff. The dry-run is safe — nothing is written to disk.
+
+**Common workflow:** run `scan --report` to generate a report for review, then run `fix --from-report --apply` to patch the files — no second browser crawl needed.
+
+```bash
+wcag-a11y scan -u http://localhost:3000 --report   # review a11y-report.md
+wcag-a11y fix --from-report --apply                 # patch files from that report
+```
 
 ---
 

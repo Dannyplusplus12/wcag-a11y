@@ -2,13 +2,14 @@ import { readFileSync, writeFileSync, readdirSync, existsSync } from 'fs';
 import { join, resolve } from 'path';
 import chalk from 'chalk';
 import { crawl } from './crawler.js';
-import type { Violation } from './engine/types.js';
+import type { Violation, ImpactLevel } from './engine/types.js';
 import type { AIProvider } from './ai/types.js';
 
 export interface FixRunOptions {
-  url: string;
-  pages: string[];
-  crawl: boolean;
+  url?: string;
+  pages?: string[];
+  crawl?: boolean;
+  reportPath?: string;
   apply: boolean;
   provider: AIProvider;
   srcDir: string;
@@ -18,19 +19,32 @@ const SOURCE_EXTS = new Set(['.jsx', '.tsx', '.js', '.ts', '.vue', '.svelte', '.
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.git', '.next', '.nuxt', 'coverage', 'public']);
 
 export async function runFix(opts: FixRunOptions): Promise<void> {
-  console.log(`\nScanning ${opts.url}...`);
+  let allViolations: Violation[];
+  let framework: string | undefined;
 
-  const result = await crawl({ url: opts.url, pages: opts.pages, crawl: opts.crawl });
-  const { framework } = result;
-
-  if (result.totalViolations === 0) {
-    console.log(chalk.green('\nNo violations found.'));
-    return;
+  if (opts.reportPath) {
+    const absReport = resolve(process.cwd(), opts.reportPath);
+    if (!existsSync(absReport)) {
+      throw new Error(`Report file not found: ${opts.reportPath}`);
+    }
+    console.log(`\nLoading violations from ${opts.reportPath}...`);
+    allViolations = parseReportViolations(absReport);
+    if (allViolations.length === 0) {
+      console.log(chalk.green('\nNo violations found in report.'));
+      return;
+    }
+    console.log(`Found ${allViolations.length} violation(s) in report. Locating source files...\n`);
+  } else {
+    console.log(`\nScanning ${opts.url}...`);
+    const result = await crawl({ url: opts.url!, pages: opts.pages!, crawl: opts.crawl! });
+    framework = result.framework;
+    if (result.totalViolations === 0) {
+      console.log(chalk.green('\nNo violations found.'));
+      return;
+    }
+    console.log(`Found ${result.totalViolations} violation(s). Locating source files...\n`);
+    allViolations = result.pages.flatMap((p) => p.violations);
   }
-
-  console.log(`Found ${result.totalViolations} violation(s). Locating source files...\n`);
-
-  const allViolations = result.pages.flatMap((p) => p.violations);
 
   // Group violations by resolved source file path
   const fileGroups = new Map<string, Violation[]>();
@@ -122,6 +136,61 @@ export async function runFix(opts: FixRunOptions): Promise<void> {
   if (unlocated > 0) {
     console.log(chalk.yellow(`${unlocated} violation(s) could not be located in source files.`));
   }
+}
+
+function parseReportViolations(reportPath: string): Violation[] {
+  const content = readFileSync(reportPath, 'utf8');
+  const violations: Violation[] = [];
+
+  const pageParts = content.split(/^## Page:/m).slice(1);
+
+  for (const part of pageParts) {
+    const pageUrl = part.split('\n')[0].trim();
+    if (part.includes('✅ No violations found')) continue;
+
+    for (const group of part.split(/^---$/m)) {
+      const headingMatch = group.match(/^###\s+\S+\s+\[(\w+)\]\s+(.+)$/m);
+      if (!headingMatch) continue;
+      const impact = headingMatch[1].toLowerCase() as ImpactLevel;
+      const description = headingMatch[2].trim();
+
+      const ruleMatch = group.match(/\*\*Rule:\*\*\s+`([^`]+)`/);
+      if (!ruleMatch) continue;
+      const ruleId = ruleMatch[1];
+
+      let wcag = '';
+      let level: 'A' | 'AA' | 'AAA' = 'A';
+      const wcagStd = group.match(/\*\*WCAG:\*\*\s+SC\s+([\d.]+)\s+\(Level\s+([A-Z]+)\)/);
+      if (wcagStd) {
+        wcag = wcagStd[1];
+        level = wcagStd[2] as 'A' | 'AA' | 'AAA';
+      } else {
+        const wcagAI = group.match(/\*\*WCAG:\*\*\s+WCAG\s+[\d.]+\s+SC\s+([\d.]+)/);
+        if (wcagAI) wcag = wcagAI[1];
+      }
+
+      const repMatch = group.match(/\*\*Representative element:\*\*\s*\n`([^`]+)`(?:\s+—\s+`([^`]+)`)?/);
+      if (!repMatch) continue;
+      const selector = repMatch[1];
+      const source = repMatch[2];
+
+      const htmlMatch = group.match(/\*\*Representative element:\*\*[\s\S]*?```html\n([\s\S]*?)\n```/);
+      const html = htmlMatch?.[1] ?? '';
+
+      violations.push({ ruleId, wcag, level, impact, description, selector, html, page: pageUrl, ...(source ? { source } : {}) });
+
+      const alsoSection = group.match(/\*\*Also affects[^*]*\*\*([\s\S]*?)(?:\n\n\*\*|\n---|\n```|$)/);
+      if (alsoSection) {
+        for (const line of alsoSection[1].split('\n')) {
+          const m = line.match(/^-\s+`([^`]+)`(?:\s+—\s+`([^`]+)`)?/);
+          if (!m) continue;
+          violations.push({ ruleId, wcag, level, impact, description, selector: m[1], html: '', page: pageUrl, ...(m[2] ? { source: m[2] } : {}) });
+        }
+      }
+    }
+  }
+
+  return violations;
 }
 
 export function findSourceFile(violation: Violation, srcDir: string): string | null {

@@ -15,7 +15,7 @@ const program = new Command();
 program
   .name('wcag-a11y')
   .description('WCAG 2.1/2.2 accessibility auditor with AI-powered fixes')
-  .version('0.3.5');
+  .version('0.3.6');
 
 program
   .command('init')
@@ -88,20 +88,29 @@ program
 program
   .command('fix')
   .description('Scan for violations and apply AI fixes directly to source files')
-  .requiredOption('-u, --url <url>', 'Base URL of your dev server (e.g. http://localhost:3000)')
+  .option('-u, --url <url>', 'Base URL of your dev server (e.g. http://localhost:3000)')
   .option('-p, --pages <pages...>', 'Specific pages to scan', ['/'])
   .option('-c, --crawl', 'Auto-discover pages by following same-origin links', false)
+  .option('--from-report [path]', 'Use an existing report instead of scanning (default: a11y-report.md)')
   .option('--apply', 'Write fixes to source files (default: dry-run, shows diff only)', false)
   .option('--provider <name>', 'Override the AI provider from config (gemini|openai|ollama)')
-  .action(async (opts: { url: string; pages: string[]; crawl: boolean; apply: boolean; provider?: string }) => {
+  .action(async (opts: { url?: string; pages: string[]; crawl: boolean; fromReport?: string | boolean; apply: boolean; provider?: string }) => {
+    if (!opts.url && !opts.fromReport) {
+      console.error('\nError: provide --url <url> to scan, or --from-report [path] to load an existing report.');
+      process.exit(1);
+    }
     try {
       const config = loadConfig();
       if (opts.provider) config.provider = opts.provider as Config['provider'];
       const provider = createAIProvider(config);
+      const reportPath = opts.fromReport
+        ? (opts.fromReport === true ? 'a11y-report.md' : opts.fromReport)
+        : undefined;
       await runFix({
         url: opts.url,
         pages: opts.pages,
         crawl: opts.crawl,
+        reportPath,
         apply: opts.apply,
         provider,
         srcDir: resolve(process.cwd(), 'src'),
