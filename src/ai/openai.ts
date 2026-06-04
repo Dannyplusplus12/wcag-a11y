@@ -1,6 +1,7 @@
 import type { Violation } from '../engine/types.js';
 import type { AIProvider, AIFix } from './types.js';
 import { buildPrompt } from './prompt.js';
+import { buildPatchPrompt } from './patch-prompt.js';
 import { groupViolations, type ViolationGroup } from './group.js';
 import { fallbackExplanation } from './fallback-explanation.js';
 
@@ -36,6 +37,23 @@ export class OpenAIProvider implements AIProvider {
     };
     const text = data.choices?.[0]?.message?.content ?? '[]';
     return this.parse(text, groups, framework);
+  }
+
+  async generateFilePatch(fileContent: string, violations: Violation[], filePath: string, framework?: string): Promise<string> {
+    const prompt = buildPatchPrompt(fileContent, violations, filePath, framework);
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` },
+      body: JSON.stringify({
+        model: this.model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.1,
+        max_tokens: 16384,
+      }),
+    });
+    if (!response.ok) throw new Error(`OpenAI API error: ${response.status} ${await response.text()}`);
+    const data = await response.json() as { choices: Array<{ message: { content: string } }> };
+    return data.choices?.[0]?.message?.content ?? '';
   }
 
   private parse(text: string, groups: ViolationGroup[], framework?: string): AIFix[] {

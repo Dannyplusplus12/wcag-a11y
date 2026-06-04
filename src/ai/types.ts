@@ -12,4 +12,5 @@ export interface AIFix {
 
 export interface AIProvider {
   generateFixes(violations: Violation[], strategy: 'rule' | 'none', framework?: string): Promise<AIFix[]>;
+  generateFilePatch(fileContent: string, violations: Violation[], filePath: string, framework?: string): Promise<string>;
 }

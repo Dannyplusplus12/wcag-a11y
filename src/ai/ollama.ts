@@ -1,6 +1,7 @@
 import type { Violation } from '../engine/types.js';
 import type { AIProvider, AIFix } from './types.js';
 import { buildPrompt } from './prompt.js';
+import { buildPatchPrompt } from './patch-prompt.js';
 import { groupViolations, type ViolationGroup } from './group.js';
 import { fallbackExplanation } from './fallback-explanation.js';
 
@@ -38,6 +39,18 @@ export class OllamaProvider implements AIProvider {
     } catch {
       return this.fallback(groups, framework);
     }
+  }
+
+  async generateFilePatch(fileContent: string, violations: Violation[], filePath: string, framework?: string): Promise<string> {
+    const prompt = buildPatchPrompt(fileContent, violations, filePath, framework);
+    const response = await fetch(`${this.baseUrl}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: this.model, prompt, stream: false }),
+    });
+    if (!response.ok) throw new Error(`Ollama error: ${response.status}. Is Ollama running? Run: ollama serve`);
+    const data = await response.json() as { response: string };
+    return data.response ?? '';
   }
 
   private fallback(groups: ViolationGroup[], framework?: string): AIFix[] {

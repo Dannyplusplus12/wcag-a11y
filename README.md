@@ -2,9 +2,11 @@
 
 [![CI](https://github.com/Dannyplusplus12/WCAG-A11y/actions/workflows/ci.yml/badge.svg)](https://github.com/Dannyplusplus12/WCAG-A11y/actions/workflows/ci.yml)
 
-Most accessibility auditors stop at detection — they tell you *what* is broken and leave the rest to you. `wcag-a11y` goes further. It crawls your running dev server with Playwright, runs 40+ WCAG 2.1/2.2 checks, and uses AI to generate a ready-to-paste fix prompt for each violation. You paste it into Cursor, Copilot, or Claude and the fix writes itself.
+Most accessibility auditors stop at detection — they tell you *what* is broken and leave the rest to you. `wcag-a11y` goes further. It crawls your running dev server with Playwright, runs 40+ WCAG 2.1/2.2 checks, and uses AI to generate ready-to-paste fix prompts **or write the fixes directly into your source files**.
 
-The goal is to close the loop between finding an accessibility issue and actually fixing it, without interrupting your existing workflow.
+Two modes:
+- **`scan`** — find violations + generate AI prompts you paste into Cursor, Copilot, or Claude
+- **`fix`** — find violations + patch source files automatically (dry-run by default, `--apply` to write)
 
 ---
 
@@ -137,6 +139,60 @@ wcag-a11y scan -u http://localhost:3000 --no-ai --ci
 | `--group <strategy>` | `rule` | `rule` (default) groups all violations of the same type into one fix prompt. `none` produces a separate prompt per element. Use `none` when violations of the same rule need different fixes |
 | `--ci` | off | Exit with code `1` if any violations are found. Use this to fail a CI pipeline |
 | `--provider <name>` | from config | Override the AI provider for this run: `gemini`, `openai`, or `ollama`. Does not modify the config file |
+
+---
+
+### `wcag-a11y fix`
+
+Scan for violations and apply AI-generated patches directly to your source files. Works with any framework — React, Vue, Angular, Svelte, or plain HTML.
+
+```bash
+# Dry-run: scan and show what would change (safe, no files written)
+wcag-a11y fix -u http://localhost:3000
+
+# Preview specific pages
+wcag-a11y fix -u http://localhost:3000 --pages / /about /contact
+
+# Write fixes to disk
+wcag-a11y fix -u http://localhost:3000 --apply
+
+# Auto-discover pages + write fixes
+wcag-a11y fix -u http://localhost:3000 --crawl --apply
+```
+
+**How it works:**
+
+1. Runs the same scan as `wcag-a11y scan`
+2. For each violation, locates the source file — checks `violation.source` (React dev mode) first, then falls back to grepping `./src` for unique identifiers in the HTML snippet (`id=`, `name=`, `for=`, local `src=`, text content)
+3. Groups violations by file (multiple violations in the same file → one AI call)
+4. Sends the full file content + violation list to your configured AI provider and asks for the corrected file
+5. Shows a colored diff before writing anything
+6. With `--apply`, overwrites the file; without it, only prints the diff
+
+```
+src/components/Navbar.jsx — 2 violation(s)
+  · [button-name] Buttons must have an accessible name
+  · [aria-valid-role] Elements must use valid ARIA roles
+
+  Requesting AI patch... done
+  +2 -1
+    <nav className="navbar">
+  -   <button onClick={toggle}><MenuIcon /></button>
+  +   <button onClick={toggle} aria-label="Toggle navigation"><MenuIcon /></button>
+      <ul role="navigation">
+  -     <li role="listbox">Home</li>
+  +     <li>Home</li>
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `-u, --url <url>` | required | Base URL of your running dev server |
+| `-p, --pages <pages...>` | `/` | Specific pages to scan |
+| `-c, --crawl` | off | Auto-discover pages by following same-origin links |
+| `--apply` | off | Write patched files to disk (dry-run without this flag) |
+| `--provider <name>` | from config | Override AI provider for this run: `gemini`, `openai`, or `ollama` |
+
+> **Tip:** Always run without `--apply` first to review the diff. The dry-run is safe — nothing is written to disk.
 
 ---
 

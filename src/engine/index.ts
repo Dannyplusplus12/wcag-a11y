@@ -1,5 +1,40 @@
 import type { Page } from 'playwright';
 import type { Violation, PageScanResult } from './types.js';
+
+async function resolveSourceLocations(page: Page, violations: Violation[]): Promise<void> {
+  const selectors = [...new Set(violations.map((v) => v.selector))];
+  if (selectors.length === 0) return;
+  try {
+    const sourceMap = await page.evaluate((sels: string[]) => {
+      const result: Record<string, string> = {};
+      for (const sel of sels) {
+        try {
+          const el = document.querySelector(sel);
+          if (!el) continue;
+          const fiberKey = Object.getOwnPropertyNames(el).find((k) => k.startsWith('__reactFiber'));
+          if (!fiberKey) continue;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          let fiber = (el as any)[fiberKey];
+          while (fiber) {
+            if (fiber._debugSource) {
+              const { fileName, lineNumber } = fiber._debugSource as { fileName: string; lineNumber: number };
+              const match = fileName.match(/[/\\]src[/\\].+/);
+              const display = match ? match[0].replace(/\\/g, '/').replace(/^\//, '') : fileName;
+              result[sel] = `${display}:${lineNumber}`;
+              break;
+            }
+            fiber = fiber.return;
+          }
+        } catch { /* ignore */ }
+      }
+      return result;
+    }, selectors);
+
+    for (const v of violations) {
+      if (sourceMap[v.selector]) v.source = sourceMap[v.selector];
+    }
+  } catch { /* non-React or production build — silently skip */ }
+}
 import { textAlternativeRules } from './rules/text-alternatives.js';
 import { colorContrastRules } from './rules/color-contrast.js';
 import { keyboardRules } from './rules/keyboard.js';
@@ -64,5 +99,6 @@ export async function scanPage(page: Page, url: string): Promise<PageScanResult>
     violations.push(...ruleViolations);
   }
 
+  await resolveSourceLocations(page, violations);
   return { url, violations };
 }

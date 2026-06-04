@@ -13,9 +13,15 @@ async function detectFramework(page: Page): Promise<string | undefined> {
       if (w['__vue_app__']) return 'Vue 3';
       if (w['Vue']) return 'Vue 2';
       if (document.querySelector('[ng-version]') !== null) return 'Angular';
+      // React: hook is registered by react-dom on load (most reliable, works with Vite HMR)
+      if (w['__REACT_DEVTOOLS_GLOBAL_HOOK__']) return 'React';
+      // React fallback: fiber properties on root element
       const root = document.getElementById('root') ?? document.getElementById('app') ?? document.body;
-      if (root && Object.keys(root).some((k) => k.startsWith('__reactFiber') || k.startsWith('__reactContainer'))) {
-        return 'React';
+      if (root) {
+        const allKeys = Object.getOwnPropertyNames(root);
+        if (allKeys.some((k) => k.startsWith('__reactFiber') || k.startsWith('__reactContainer'))) {
+          return 'React';
+        }
       }
       if (document.querySelector('[data-svelte-h]') !== null) return 'Svelte';
       return undefined;

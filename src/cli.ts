@@ -7,13 +7,15 @@ import { groupViolations } from './ai/group.js';
 import { printTerminalReport, printAIPrompts } from './reporter/terminal.js';
 import { generateMarkdownReport } from './reporter/markdown.js';
 import { runDemo } from './demo.js';
+import { runFix } from './fixer.js';
+import { resolve } from 'path';
 
 const program = new Command();
 
 program
   .name('wcag-a11y')
   .description('WCAG 2.1/2.2 accessibility auditor with AI-powered fixes')
-  .version('0.3.4');
+  .version('0.3.5');
 
 program
   .command('init')
@@ -29,15 +31,15 @@ program
   .requiredOption('-u, --url <url>', 'Base URL of your dev server (e.g. http://localhost:3000)')
   .option('-p, --pages <pages...>', 'Specific pages to scan (e.g. / /about /contact)', ['/'])
   .option('-c, --crawl', 'Auto-discover pages by following same-origin links', false)
-  .option('-r, --report', 'Save a full markdown report to a11y-report.md', false)
+  .option('--no-report', 'Skip saving markdown report to a11y-report.md')
   .option('--no-ai', 'Skip AI fix generation (faster, violations only)')
   .option('--no-explain', 'Hide AI fix explanations in terminal output')
-  .option('--no-terminal', 'Suppress terminal output (violations summary)')
+  .option('--terminal', 'Print violations summary to terminal', false)
   .option('--fast-mode', 'Output only AI fix prompts — no summaries or explanations', false)
   .option('--group <strategy>', 'Group violations by rule or show individually (rule|none)', 'rule')
   .option('--ci', 'Exit with code 1 if any violations are found (for CI/CD pipelines)', false)
   .option('--provider <name>', 'Override the AI provider from config (gemini|openai|ollama)')
-  .action(async (opts: { url: string; pages: string[]; crawl: boolean; report: boolean; ai: boolean; explain: boolean; terminal: boolean; fastMode: boolean; group: string; ci: boolean; provider?: string }) => {
+  .action(async (opts: { url: string; pages: string[]; crawl: boolean; report: boolean; ai: boolean; explain: boolean; terminal: boolean; fastMode: boolean; group: string; ci: boolean; provider?: string; }) => {
     try {
       console.log(`\nScanning ${opts.url}...`);
 
@@ -84,9 +86,36 @@ program
   });
 
 program
+  .command('fix')
+  .description('Scan for violations and apply AI fixes directly to source files')
+  .requiredOption('-u, --url <url>', 'Base URL of your dev server (e.g. http://localhost:3000)')
+  .option('-p, --pages <pages...>', 'Specific pages to scan', ['/'])
+  .option('-c, --crawl', 'Auto-discover pages by following same-origin links', false)
+  .option('--apply', 'Write fixes to source files (default: dry-run, shows diff only)', false)
+  .option('--provider <name>', 'Override the AI provider from config (gemini|openai|ollama)')
+  .action(async (opts: { url: string; pages: string[]; crawl: boolean; apply: boolean; provider?: string }) => {
+    try {
+      const config = loadConfig();
+      if (opts.provider) config.provider = opts.provider as Config['provider'];
+      const provider = createAIProvider(config);
+      await runFix({
+        url: opts.url,
+        pages: opts.pages,
+        crawl: opts.crawl,
+        apply: opts.apply,
+        provider,
+        srcDir: resolve(process.cwd(), 'src'),
+      });
+    } catch (err) {
+      console.error(`\nError: ${(err as Error).message}`);
+      process.exit(1);
+    }
+  });
+
+program
   .command('demo')
   .description('Scan a built-in demo page with intentional violations — no dev server needed')
-  .option('-r, --report', 'Save a full markdown report to a11y-report.md', false)
+  .option('--no-report', 'Skip saving markdown report to a11y-report.md')
   .option('--no-ai', 'Skip AI fix generation (faster, violations only)')
   .action(async (opts: { report: boolean; ai: boolean }) => {
     try {

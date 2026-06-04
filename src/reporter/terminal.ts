@@ -39,7 +39,8 @@ export function printTerminalReport(result: ScanResult): void {
       const tag  = color(`[${g.impact.toUpperCase()}]`) + countSuffix;
       const wcag = chalk.gray(`WCAG ${g.wcag}`);
       console.log(`     ${tag} ${g.description}  ${wcag}`);
-      console.log(`     ${chalk.gray('→')} ${chalk.dim(g.selectors[0])}`);
+      const sourceHint = g.representative.source ? chalk.dim(`  ${g.representative.source}`) : '';
+      console.log(`     ${chalk.gray('→')} ${chalk.dim(g.selectors[0])}${sourceHint}`);
       if (g.count > 1) {
         console.log(`     ${chalk.gray(`   …and ${g.count - 1} more`)}`);
       }

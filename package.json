@@ -1,6 +1,6 @@
 {
   "name": "wcag-a11y",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "WCAG 2.1/2.2 accessibility auditor with AI-powered fixes",
   "type": "module",
   "bin": {

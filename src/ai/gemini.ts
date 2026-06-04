@@ -1,6 +1,7 @@
 import type { Violation } from '../engine/types.js';
 import type { AIProvider, AIFix } from './types.js';
 import { buildPrompt } from './prompt.js';
+import { buildPatchPrompt } from './patch-prompt.js';
 import { groupViolations, type ViolationGroup } from './group.js';
 import { fallbackExplanation } from './fallback-explanation.js';
 
@@ -32,6 +33,22 @@ export class GeminiProvider implements AIProvider {
     };
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '[]';
     return this.parse(text, groups, framework);
+  }
+
+  async generateFilePatch(fileContent: string, violations: Violation[], filePath: string, framework?: string): Promise<string> {
+    const prompt = buildPatchPrompt(fileContent, violations, filePath, framework);
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 16384 },
+      }),
+    });
+    if (!response.ok) throw new Error(`Gemini API error: ${response.status} ${await response.text()}`);
+    const data = await response.json() as { candidates: Array<{ content: { parts: Array<{ text: string }> } }> };
+    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
   }
 
   private parse(text: string, groups: ViolationGroup[], framework?: string): AIFix[] {

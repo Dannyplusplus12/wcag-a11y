@@ -77,6 +77,7 @@ function buildFullReport(result: ScanResult, fixes: AIFix[]): string[] {
       const fix = fixes.find((f) => f.ruleId === v.ruleId);
       const others = group.slice(1);
 
+      const sourceRef = v.source ? ` — \`${v.source}\`` : '';
       lines.push(
         `### ${IMPACT_EMOJI[v.impact] ?? '⚪'} [${v.impact.toUpperCase()}] ${v.description}`,
         '',
@@ -85,7 +86,7 @@ function buildFullReport(result: ScanResult, fixes: AIFix[]): string[] {
         `**Instances:** ${group.length}`,
         '',
         '**Representative element:**',
-        `\`${v.selector}\``,
+        `\`${v.selector}\`${sourceRef}`,
         '```html',
         v.html,
         '```',
@@ -95,7 +96,8 @@ function buildFullReport(result: ScanResult, fixes: AIFix[]): string[] {
       if (others.length > 0) {
         lines.push(`**Also affects ${others.length} more element${others.length > 1 ? 's' : ''} on this page:**`);
         for (const o of others) {
-          lines.push(`- \`${o.selector}\``);
+          const otherSource = o.source ? ` — \`${o.source}\`` : '';
+          lines.push(`- \`${o.selector}\`${otherSource}`);
         }
         lines.push('');
       }

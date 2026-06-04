@@ -9,6 +9,7 @@ export interface Violation {
   selector: string;     // CSS selector of the offending element
   html: string;         // raw HTML snippet of the element
   page: string;         // URL of the page where found
+  source?: string;      // e.g. "src/components/Navbar.jsx:42" (React dev mode only)
 }
 
 export interface Rule {
