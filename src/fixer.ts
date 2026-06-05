@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'fs';
+import { execSync } from 'child_process';
 import { join, resolve } from 'path';
 import chalk from 'chalk';
 import { crawl } from './crawler.js';
@@ -11,6 +12,7 @@ export interface FixRunOptions {
   crawl?: boolean;
   reportPath?: string;
   apply: boolean;
+  force?: boolean;
   provider: AIProvider;
   srcDir: string;
   framework?: string;
@@ -71,6 +73,19 @@ export async function runFix(opts: FixRunOptions): Promise<void> {
   const locatedCount = allViolations.length - unlocated;
   console.log(`Grouped ${locatedCount} violation(s) across ${fileGroups.size} file(s).\n`);
   if (!opts.apply) console.log(chalk.gray('Dry-run mode — use --apply to write changes.\n'));
+
+  if (opts.apply && !opts.force) {
+    try {
+      const dirty = execSync('git status --porcelain', { encoding: 'utf8' }).trim();
+      if (dirty) {
+        console.error(chalk.red('Error: uncommitted changes detected. Commit or stash them first, or run with --force to override.\n'));
+        console.error(chalk.gray(dirty.split('\n').slice(0, 5).join('\n')));
+        process.exit(1);
+      }
+    } catch {
+      // not a git repo or git unavailable — proceed without guard
+    }
+  }
 
   let modifiedFiles = 0;
   let modifiedViolations = 0;

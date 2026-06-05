@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Dannyplusplus12/WCAG-A11y/actions/workflows/ci.yml/badge.svg)](https://github.com/Dannyplusplus12/WCAG-A11y/actions/workflows/ci.yml)
 
-Most accessibility auditors stop at detection — they tell you *what* is broken and leave the rest to you. `wcag-a11y` crawls your running dev server with Playwright, runs 40+ WCAG 2.1/2.2 checks, and uses AI to generate ready-to-paste fix prompts **or write the fixes directly into your source files**.
+Most accessibility auditors stop at detection — they tell you *what* is broken and leave the rest to you. `wcag-a11y` crawls your running dev server with Playwright, runs 40+ WCAG 2.1/2.2 checks, and uses AI to generate ready-to-paste fix prompts **or write the fixes directly into your source files**. Works with authenticated apps via Playwright session state.
 
 Two modes:
 - **`scan`** — find violations + get AI prompts you paste into Cursor, Copilot, or Claude
@@ -121,6 +121,7 @@ wcag-a11y scan -u http://localhost:3000 --terminal --fast-mode
 | `--fast-mode` | off | Output only the raw prompts — no summaries or decoration |
 | `--group <strategy>` | `rule` | `rule`: one prompt per rule type. `none`: one prompt per element |
 | `--ci` | off | Exit with code `1` if any violations are found |
+| `--auth-state <path>` | — | Path to a Playwright `storageState` JSON. Loads cookies and localStorage so you can scan pages behind a login wall |
 | `--provider <name>` | from config | Override AI provider for this run |
 | `--framework <name>` | from config | *(optional)* Override framework for this run. Auto-detected by default; use this when scanning staging URLs or for frameworks outside the detection list |
 
@@ -165,8 +166,39 @@ wcag-a11y fix --from-report --apply       # patches files from that report, no s
 | `-c, --crawl` | off | Auto-discover pages by following same-origin links |
 | `--from-report [path]` | `a11y-report.md` | Load violations from an existing report instead of rescanning |
 | `--apply` | off | Write fixes to disk (dry-run without this flag) |
+| `--force` | off | Skip the git dirty-state check when using `--apply` |
 | `--provider <name>` | from config | Override AI provider for this run |
 | `--framework <name>` | from config | *(optional)* Override framework for this run. Auto-detected by default; use this when scanning staging URLs or for frameworks outside the detection list |
+
+**Git safety:** `wcag-a11y fix --apply` checks for uncommitted changes before writing anything. If the working tree is dirty it exits with an error — commit or stash first, or pass `--force` to override.
+
+---
+
+### Scanning authenticated pages
+
+Most real apps require a login. Save your session with Playwright once, then reuse it on every scan:
+
+```bash
+# 1. Save session (run this once after logging in)
+node -e "
+const { chromium } = require('playwright');
+(async () => {
+  const browser = await chromium.launch({ headless: false });
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto('http://localhost:3000/login');
+  // log in manually in the browser window that opens
+  await page.waitForTimeout(30000);
+  await context.storageState({ path: 'auth.json' });
+  await browser.close();
+})();
+"
+
+# 2. Scan with your saved session
+wcag-a11y scan -u http://localhost:3000 --auth-state auth.json --pages / /dashboard /settings
+```
+
+`auth.json` captures cookies and `localStorage`. Keep it out of source control (add `auth.json` to `.gitignore`).
 
 ---
 
@@ -192,7 +224,7 @@ Accepted framework values: `next`, `react`, `vue`, `nuxt`, `angular`, `svelte`, 
 
 ### `wcag-a11y demo`
 
-Scan a built-in page with 10 intentional violations. No dev server or config required — useful for trying the tool before pointing it at your own project.
+Scan a built-in page with 11 intentional violations. No dev server or config required — useful for trying the tool before pointing it at your own project.
 
 ```bash
 wcag-a11y demo           # violations + AI fix prompts (requires config)

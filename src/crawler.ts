@@ -36,6 +36,7 @@ export interface CrawlOptions {
   pages?: string[];   // e.g. ['/', '/about', '/contact']
   crawl?: boolean;    // auto-discover routes by following same-origin links
   framework?: string; // skip auto-detection and use this value directly
+  authState?: string; // path to Playwright storageState JSON (cookies + localStorage)
 }
 
 export async function crawl(options: CrawlOptions): Promise<ScanResult> {
@@ -44,7 +45,9 @@ export async function crawl(options: CrawlOptions): Promise<ScanResult> {
   const browser = await chromium.launch({ headless: true });
 
   try {
-    const context = await browser.newContext();
+    const context = await browser.newContext(
+      options.authState ? { storageState: options.authState } : {}
+    );
     let pagesToVisit = pages.map((p) => `${baseUrl}${p}`);
 
     if (autoCrawl) {

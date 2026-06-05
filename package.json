@@ -1,7 +1,7 @@
 {
   "name": "wcag-a11y",
-  "version": "0.4.3",
-  "description": "WCAG 2.1/2.2 accessibility auditor with AI-powered fixes. Crawls your dev server with Playwright, runs 40+ checks, and uses AI (12 providers) to generate fix prompts or patch source files directly.",
+  "version": "0.5.0",
+  "description": "WCAG 2.1/2.2 accessibility auditor with AI-powered fixes. Crawls your dev server with Playwright, runs 40+ checks, and uses AI (12 providers) to generate fix prompts or patch source files directly. Supports authenticated sessions via Playwright storageState.",
   "keywords": [
     "wcag",
     "accessibility",
@@ -18,6 +18,7 @@
     "gemini",
     "openai",
     "anthropic",
+    "auth",
     "screen-reader"
   ],
   "type": "module",

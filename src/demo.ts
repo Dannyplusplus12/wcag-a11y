@@ -19,36 +19,43 @@ const DEMO_HTML = `<!DOCTYPE html>
   <!-- 1. img-alt: missing alt -->
   <img src="banner.jpg">
 
-  <!-- 2. color contrast: fails 4.5:1 -->
+  <!-- 2. color-contrast: low contrast on solid background (fails 4.5:1) -->
   <p style="color:#aaa;background:#fff;font-size:14px;">
     Summer sale — up to 50% off selected items.
   </p>
 
-  <!-- 3. keyboard: div with click but no role/tabindex -->
+  <!-- 3. color-contrast: rgba(0,0,0,0) transparent bg — walks up to dark parent -->
+  <div style="background:#1a1a2e;padding:8px;">
+    <p style="color:#888;background:rgba(0,0,0,0);font-size:14px;">
+      Free shipping on orders over $50.
+    </p>
+  </div>
+
+  <!-- 4. keyboard: div with click but no role/tabindex -->
   <div onclick="addToCart()">Add to Cart</div>
 
-  <!-- 4. form: input with no label -->
+  <!-- 5. form: input with no label -->
   <form id="newsletter">
     <input type="email" placeholder="your@email.com">
     <button type="submit"></button>
   </form>
 
-  <!-- 5. ARIA: invalid role -->
+  <!-- 6. ARIA: invalid role -->
   <div role="widget" id="promo-banner">Special offer!</div>
 
-  <!-- 6. Structure: heading skips h2 → h4 -->
+  <!-- 7. Structure: heading skips h2 → h4 -->
   <h4>Featured Products</h4>
 
-  <!-- 7. Link: non-descriptive text -->
+  <!-- 8. Link: non-descriptive text -->
   <a href="/sale">Click here</a>
 
-  <!-- 8. Media: video without captions -->
+  <!-- 9. Media: video without captions -->
   <video src="promo.mp4" controls></video>
 
-  <!-- 9. ARIA: aria-hidden but focusable -->
+  <!-- 10. ARIA: aria-hidden but focusable -->
   <button aria-hidden="true" tabindex="0">Hidden action</button>
 
-  <!-- 10. Link: empty anchor -->
+  <!-- 11. Link: empty anchor -->
   <a href="/about"></a>
 
 </body>
@@ -71,7 +78,7 @@ export async function runDemo(opts: { ai: boolean; report: boolean }): Promise<v
   const { server, url } = await startDemoServer();
 
   try {
-    console.log('\nRunning demo scan against a built-in page with intentional WCAG violations...\n');
+    console.log('\nRunning demo scan against a built-in page with 11 intentional WCAG violations...\n');
 
     const result = await crawl({ url, pages: ['/'] });
     printTerminalReport(result);

@@ -39,13 +39,14 @@ program
   .option('--fast-mode', 'Output only AI fix prompts — no summaries or explanations', false)
   .option('--group <strategy>', 'Group violations by rule or show individually (rule|none)', 'rule')
   .option('--ci', 'Exit with code 1 if any violations are found (for CI/CD pipelines)', false)
+  .option('--auth-state <path>', 'Path to Playwright storageState JSON for authenticated sessions (e.g. auth.json)')
   .option('--provider <name>', 'Override the AI provider from config (gemini|openai|ollama|anthropic|mistral|groq|cohere|xai|deepseek|together|perplexity|azure-openai)')
   .option('--framework <name>', 'Override framework detection for this run (e.g. next, react, vue, angular, svelte, astro)')
-  .action(async (opts: { url: string; pages: string[]; crawl: boolean; report: boolean; ai: boolean; explain: boolean; terminal: boolean; fastMode: boolean; group: string; ci: boolean; provider?: string; framework?: string }) => {
+  .action(async (opts: { url: string; pages: string[]; crawl: boolean; report: boolean; ai: boolean; explain: boolean; terminal: boolean; fastMode: boolean; group: string; ci: boolean; authState?: string; provider?: string; framework?: string }) => {
     try {
       console.log(`\nScanning ${opts.url}...`);
 
-      const result = await crawl({ url: opts.url, pages: opts.pages, crawl: opts.crawl, framework: opts.framework });
+      const result = await crawl({ url: opts.url, pages: opts.pages, crawl: opts.crawl, framework: opts.framework, authState: opts.authState });
 
       if (opts.terminal && !opts.fastMode) {
         printTerminalReport(result);
@@ -96,9 +97,10 @@ program
   .option('-c, --crawl', 'Auto-discover pages by following same-origin links', false)
   .option('--from-report [path]', 'Use an existing report instead of scanning (default: a11y-report.md)')
   .option('--apply', 'Write fixes to source files (default: dry-run, shows diff only)', false)
+  .option('--force', 'Skip git dirty-state check when using --apply', false)
   .option('--provider <name>', 'Override the AI provider from config (gemini|openai|ollama|anthropic|mistral|groq|cohere|xai|deepseek|together|perplexity|azure-openai)')
   .option('--framework <name>', 'Override framework detection for this run (e.g. next, react, vue, angular, svelte, astro)')
-  .action(async (opts: { url?: string; pages: string[]; crawl: boolean; fromReport?: string | boolean; apply: boolean; provider?: string; framework?: string }) => {
+  .action(async (opts: { url?: string; pages: string[]; crawl: boolean; fromReport?: string | boolean; apply: boolean; force: boolean; provider?: string; framework?: string }) => {
     if (!opts.url && !opts.fromReport) {
       console.error('\nError: provide --url <url> to scan, or --from-report [path] to load an existing report.');
       process.exit(1);
@@ -116,6 +118,7 @@ program
         crawl: opts.crawl,
         reportPath,
         apply: opts.apply,
+        force: opts.force,
         provider,
         srcDir: resolve(process.cwd(), 'src'),
         framework: opts.framework ?? config.framework,

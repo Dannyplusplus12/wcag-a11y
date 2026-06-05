@@ -23,6 +23,38 @@ export const colorContrastRules: Rule[] = [
         }
         return parts.join(' > ') || el.tagName.toLowerCase();
       };
+
+      const parseRgba = (raw: string): [number, number, number, number] | null => {
+        const m = raw.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+        if (!m) return null;
+        return [+m[1], +m[2], +m[3], m[4] !== undefined ? parseFloat(m[4]) : 1];
+      };
+
+      const getOpaqueBg = (el: Element): [number, number, number] => {
+        let node: Element | null = el;
+        while (node) {
+          const rgba = parseRgba(window.getComputedStyle(node).backgroundColor);
+          if (rgba && rgba[3] > 0.01) return [rgba[0], rgba[1], rgba[2]];
+          node = node.parentElement;
+        }
+        return [255, 255, 255];
+      };
+
+      const resolveBackground = (bgRaw: string, el: Element): [number, number, number] => {
+        const bgRgba = parseRgba(bgRaw);
+        if (!bgRgba || bgRgba[3] <= 0.01) return getOpaqueBg(el.parentElement ?? el);
+        if (bgRgba[3] < 0.99) {
+          const parent = getOpaqueBg(el.parentElement ?? el);
+          const a = bgRgba[3];
+          return [
+            Math.round(bgRgba[0] * a + parent[0] * (1 - a)),
+            Math.round(bgRgba[1] * a + parent[1] * (1 - a)),
+            Math.round(bgRgba[2] * a + parent[2] * (1 - a)),
+          ];
+        }
+        return [bgRgba[0], bgRgba[1], bgRgba[2]];
+      };
+
       const elements = Array.from(document.querySelectorAll('p, span, li, td, th, h1, h2, h3, h4, h5, h6, a, label'));
       const violations: Array<{ selector: string; html: string }> = [];
 
@@ -34,18 +66,15 @@ export const colorContrastRules: Rule[] = [
         const isLargeText = fontSize >= 24 || (fontSize >= 18.67 && (fontWeight === 'bold' || parseInt(fontWeight) >= 700));
         if (isLargeText) continue;
 
-        const fgRaw = style.color;
-        const bgRaw = style.backgroundColor;
-
-        const fgMatch = fgRaw.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-        const bgMatch = bgRaw.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-        if (!fgMatch || !bgMatch) continue;
+        const fgRgba = parseRgba(style.color);
+        if (!fgRgba) continue;
+        const [bgR, bgG, bgB] = resolveBackground(style.backgroundColor, el);
 
         const toLinear = (c: number) => { const s = c / 255; return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4); };
         const lum = (r: number, g: number, b: number) => 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
 
-        const l1 = lum(+fgMatch[1], +fgMatch[2], +fgMatch[3]);
-        const l2 = lum(+bgMatch[1], +bgMatch[2], +bgMatch[3]);
+        const l1 = lum(fgRgba[0], fgRgba[1], fgRgba[2]);
+        const l2 = lum(bgR, bgG, bgB);
         const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 
         if (ratio < 4.5) {
@@ -77,6 +106,38 @@ export const colorContrastRules: Rule[] = [
         }
         return parts.join(' > ') || el.tagName.toLowerCase();
       };
+
+      const parseRgba = (raw: string): [number, number, number, number] | null => {
+        const m = raw.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+        if (!m) return null;
+        return [+m[1], +m[2], +m[3], m[4] !== undefined ? parseFloat(m[4]) : 1];
+      };
+
+      const getOpaqueBg = (el: Element): [number, number, number] => {
+        let node: Element | null = el;
+        while (node) {
+          const rgba = parseRgba(window.getComputedStyle(node).backgroundColor);
+          if (rgba && rgba[3] > 0.01) return [rgba[0], rgba[1], rgba[2]];
+          node = node.parentElement;
+        }
+        return [255, 255, 255];
+      };
+
+      const resolveBackground = (bgRaw: string, el: Element): [number, number, number] => {
+        const bgRgba = parseRgba(bgRaw);
+        if (!bgRgba || bgRgba[3] <= 0.01) return getOpaqueBg(el.parentElement ?? el);
+        if (bgRgba[3] < 0.99) {
+          const parent = getOpaqueBg(el.parentElement ?? el);
+          const a = bgRgba[3];
+          return [
+            Math.round(bgRgba[0] * a + parent[0] * (1 - a)),
+            Math.round(bgRgba[1] * a + parent[1] * (1 - a)),
+            Math.round(bgRgba[2] * a + parent[2] * (1 - a)),
+          ];
+        }
+        return [bgRgba[0], bgRgba[1], bgRgba[2]];
+      };
+
       const elements = Array.from(document.querySelectorAll('p, span, h1, h2, h3, h4, h5, h6'));
       const violations: Array<{ selector: string; html: string }> = [];
 
@@ -88,17 +149,15 @@ export const colorContrastRules: Rule[] = [
         const isLargeText = fontSize >= 24 || (fontSize >= 18.67 && (fontWeight === 'bold' || parseInt(fontWeight) >= 700));
         if (!isLargeText) continue;
 
-        const fgRaw = style.color;
-        const bgRaw = style.backgroundColor;
-        const fgMatch = fgRaw.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-        const bgMatch = bgRaw.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-        if (!fgMatch || !bgMatch) continue;
+        const fgRgba = parseRgba(style.color);
+        if (!fgRgba) continue;
+        const [bgR, bgG, bgB] = resolveBackground(style.backgroundColor, el);
 
         const toLinear = (c: number) => { const s = c / 255; return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4); };
         const lum = (r: number, g: number, b: number) => 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
 
-        const l1 = lum(+fgMatch[1], +fgMatch[2], +fgMatch[3]);
-        const l2 = lum(+bgMatch[1], +bgMatch[2], +bgMatch[3]);
+        const l1 = lum(fgRgba[0], fgRgba[1], fgRgba[2]);
+        const l2 = lum(bgR, bgG, bgB);
         const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 
         if (ratio < 3) {
