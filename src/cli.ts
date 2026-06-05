@@ -15,7 +15,7 @@ const program = new Command();
 program
   .name('wcag-a11y')
   .description('WCAG 2.1/2.2 accessibility auditor with AI-powered fixes')
-  .version('0.4.2');
+  .version('0.4.3');
 
 program
   .command('init')

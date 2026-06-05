@@ -78,19 +78,20 @@ npm install -g wcag-a11y
 ## Quick start
 
 ```bash
-# 1. Configure your AI provider and framework (Gemini is free, no credit card)
-wcag-a11y init --framework next      # Next.js
-wcag-a11y init --framework react     # React / Vite
-wcag-a11y init --framework vue       # Vue / Nuxt
-wcag-a11y init --framework angular   # Angular
-wcag-a11y init --framework svelte    # Svelte / SvelteKit
-wcag-a11y init                       # plain HTML or auto-detect
+# 1. Configure your AI provider (Gemini is free, no credit card)
+wcag-a11y init
 
 # 2. Start your dev server, then scan
 wcag-a11y scan -u http://localhost:3000
 ```
 
 Add `--pages / /about /contact` to scan specific routes, or `--crawl` to follow links automatically.
+
+**Optional — set your framework once:** The tool auto-detects common frameworks at runtime. If detection fails (e.g. scanning a staging URL, or using Astro/SvelteKit), set it in your config so every run uses the right syntax:
+
+```bash
+wcag-a11y init --framework next    # or react, vue, angular, svelte, astro, …
+```
 
 ---
 
@@ -121,7 +122,7 @@ wcag-a11y scan -u http://localhost:3000 --terminal --fast-mode
 | `--group <strategy>` | `rule` | `rule`: one prompt per rule type. `none`: one prompt per element |
 | `--ci` | off | Exit with code `1` if any violations are found |
 | `--provider <name>` | from config | Override AI provider for this run |
-| `--framework <name>` | from config | Override framework for this run (e.g. `next`, `react`, `vue`, `angular`, `svelte`, `astro`) |
+| `--framework <name>` | from config | *(optional)* Override framework for this run. Auto-detected by default; use this when scanning staging URLs or for frameworks outside the detection list |
 
 ---
 
@@ -165,27 +166,27 @@ wcag-a11y fix --from-report --apply       # patches files from that report, no s
 | `--from-report [path]` | `a11y-report.md` | Load violations from an existing report instead of rescanning |
 | `--apply` | off | Write fixes to disk (dry-run without this flag) |
 | `--provider <name>` | from config | Override AI provider for this run |
-| `--framework <name>` | from config | Override framework for this run (e.g. `next`, `react`, `vue`, `angular`, `svelte`, `astro`) |
+| `--framework <name>` | from config | *(optional)* Override framework for this run. Auto-detected by default; use this when scanning staging URLs or for frameworks outside the detection list |
 
 ---
 
 ### `wcag-a11y init`
 
-Create `a11y.config.json` pre-configured for your chosen provider and framework.
+Create `a11y.config.json` pre-configured for your chosen provider.
 
 ```bash
 wcag-a11y init                                      # Gemini (free, default)
-wcag-a11y init --provider openai --framework next   # OpenAI + Next.js
-wcag-a11y init --provider ollama --framework react  # local Ollama + React
-# … 12 providers total, any framework string accepted
+wcag-a11y init --provider openai
+wcag-a11y init --provider ollama                    # local — no API key needed
+wcag-a11y init --provider openai --framework next   # optional: save framework too
 ```
 
 | Flag | Description |
 |---|---|
 | `--provider <name>` | AI provider. Default: `gemini`. See [AI Providers](#ai-providers) for all options |
-| `--framework <name>` | Your project framework — saved to config so every scan uses it automatically |
+| `--framework <name>` | *(optional)* Your project framework — saved to config so every scan uses it automatically. The tool auto-detects common frameworks; use this flag when scanning staging URLs or using a framework not in the detection list |
 
-Framework is saved as `"framework"` in `a11y.config.json`. You can also edit the file directly at any time. Supported values for best results: `next`, `react`, `vue`, `nuxt`, `angular`, `svelte`, `gatsby`, `remix`, `astro` — or any free-form string.
+Accepted framework values: `next`, `react`, `vue`, `nuxt`, `angular`, `svelte`, `gatsby`, `remix`, `astro` — or any free-form string. You can also add `"framework": "next"` directly to `a11y.config.json` at any time.
 
 ---
 
@@ -226,6 +227,15 @@ All models are configurable. If the AI response is unparseable, the tool generat
 ## Config
 
 Run `wcag-a11y init` to generate `a11y.config.json`. Only fill in the fields for your chosen provider. This file is gitignored by default.
+
+```json
+{
+  "provider": "gemini",
+  "apiKey": "YOUR_GEMINI_API_KEY"
+}
+```
+
+`"framework"` is optional — add it if auto-detection fails for your setup:
 
 ```json
 {
