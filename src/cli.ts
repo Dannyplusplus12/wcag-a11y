@@ -15,14 +15,15 @@ const program = new Command();
 program
   .name('wcag-a11y')
   .description('WCAG 2.1/2.2 accessibility auditor with AI-powered fixes')
-  .version('0.4.1');
+  .version('0.4.2');
 
 program
   .command('init')
   .description('Create a11y.config.json in the current directory')
   .option('--provider <name>', 'AI provider to configure (gemini|openai|ollama|anthropic|mistral|groq|cohere|xai|deepseek|together|perplexity|azure-openai)', 'gemini')
-  .action((opts: { provider: ProviderName }) => {
-    initConfig(opts.provider);
+  .option('--framework <name>', 'Your project framework — saves to config so every run uses it automatically (e.g. next, react, vue, angular, svelte, astro)')
+  .action((opts: { provider: ProviderName; framework?: string }) => {
+    initConfig(opts.provider, opts.framework);
   });
 
 program
@@ -39,11 +40,12 @@ program
   .option('--group <strategy>', 'Group violations by rule or show individually (rule|none)', 'rule')
   .option('--ci', 'Exit with code 1 if any violations are found (for CI/CD pipelines)', false)
   .option('--provider <name>', 'Override the AI provider from config (gemini|openai|ollama|anthropic|mistral|groq|cohere|xai|deepseek|together|perplexity|azure-openai)')
-  .action(async (opts: { url: string; pages: string[]; crawl: boolean; report: boolean; ai: boolean; explain: boolean; terminal: boolean; fastMode: boolean; group: string; ci: boolean; provider?: string; }) => {
+  .option('--framework <name>', 'Override framework detection for this run (e.g. next, react, vue, angular, svelte, astro)')
+  .action(async (opts: { url: string; pages: string[]; crawl: boolean; report: boolean; ai: boolean; explain: boolean; terminal: boolean; fastMode: boolean; group: string; ci: boolean; provider?: string; framework?: string }) => {
     try {
       console.log(`\nScanning ${opts.url}...`);
 
-      const result = await crawl({ url: opts.url, pages: opts.pages, crawl: opts.crawl });
+      const result = await crawl({ url: opts.url, pages: opts.pages, crawl: opts.crawl, framework: opts.framework });
 
       if (opts.terminal && !opts.fastMode) {
         printTerminalReport(result);
@@ -59,11 +61,12 @@ program
         const provider = createAIProvider(config);
         const allViolations = result.pages.flatMap((p) => p.violations);
         const ruleGroups = groupViolations(allViolations, strategy);
+        const framework = result.framework ?? config.framework;
 
         if (!opts.fastMode) {
           console.log(`\nGenerating AI fixes for ${ruleGroups.length} rule groups (${allViolations.length} violations)...`);
         }
-        const fixes = await provider.generateFixes(allViolations, strategy, result.framework);
+        const fixes = await provider.generateFixes(allViolations, strategy, framework);
 
         if (opts.terminal) {
           printAIPrompts(fixes, { explain: opts.explain, fastMode: opts.fastMode });
@@ -94,7 +97,8 @@ program
   .option('--from-report [path]', 'Use an existing report instead of scanning (default: a11y-report.md)')
   .option('--apply', 'Write fixes to source files (default: dry-run, shows diff only)', false)
   .option('--provider <name>', 'Override the AI provider from config (gemini|openai|ollama|anthropic|mistral|groq|cohere|xai|deepseek|together|perplexity|azure-openai)')
-  .action(async (opts: { url?: string; pages: string[]; crawl: boolean; fromReport?: string | boolean; apply: boolean; provider?: string }) => {
+  .option('--framework <name>', 'Override framework detection for this run (e.g. next, react, vue, angular, svelte, astro)')
+  .action(async (opts: { url?: string; pages: string[]; crawl: boolean; fromReport?: string | boolean; apply: boolean; provider?: string; framework?: string }) => {
     if (!opts.url && !opts.fromReport) {
       console.error('\nError: provide --url <url> to scan, or --from-report [path] to load an existing report.');
       process.exit(1);
@@ -114,6 +118,7 @@ program
         apply: opts.apply,
         provider,
         srcDir: resolve(process.cwd(), 'src'),
+        framework: opts.framework ?? config.framework,
       });
     } catch (err) {
       console.error(`\nError: ${(err as Error).message}`);

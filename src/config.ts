@@ -9,6 +9,7 @@ export type ProviderName =
 
 export interface Config {
   provider: ProviderName;
+  framework?: string;
   // Gemini
   apiKey?: string;
   model?: string;
@@ -134,13 +135,14 @@ const STARTER_CONFIGS: Record<ProviderName, [Partial<Config>, string]> = {
   ],
 };
 
-export function initConfig(provider: ProviderName = 'gemini'): void {
+export function initConfig(provider: ProviderName = 'gemini', framework?: string): void {
   const configPath = join(process.cwd(), CONFIG_FILE);
   if (existsSync(configPath)) {
     console.log(`${CONFIG_FILE} already exists.`);
     return;
   }
   const [starter, message] = STARTER_CONFIGS[provider];
-  writeFileSync(configPath, JSON.stringify(starter, null, 2));
+  const config = framework ? { ...starter, framework } : starter;
+  writeFileSync(configPath, JSON.stringify(config, null, 2));
   console.log(message);
 }

@@ -13,6 +13,7 @@ export interface FixRunOptions {
   apply: boolean;
   provider: AIProvider;
   srcDir: string;
+  framework?: string;
 }
 
 const SOURCE_EXTS = new Set(['.jsx', '.tsx', '.js', '.ts', '.vue', '.svelte', '.html']);
@@ -33,10 +34,11 @@ export async function runFix(opts: FixRunOptions): Promise<void> {
       console.log(chalk.green('\nNo violations found in report.'));
       return;
     }
+    framework = opts.framework;
     console.log(`Found ${allViolations.length} violation(s) in report. Locating source files...\n`);
   } else {
     console.log(`\nScanning ${opts.url}...`);
-    const result = await crawl({ url: opts.url!, pages: opts.pages!, crawl: opts.crawl! });
+    const result = await crawl({ url: opts.url!, pages: opts.pages!, crawl: opts.crawl!, framework: opts.framework });
     framework = result.framework;
     if (result.totalViolations === 0) {
       console.log(chalk.green('\nNo violations found.'));

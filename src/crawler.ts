@@ -35,6 +35,7 @@ export interface CrawlOptions {
   url: string;
   pages?: string[];   // e.g. ['/', '/about', '/contact']
   crawl?: boolean;    // auto-discover routes by following same-origin links
+  framework?: string; // skip auto-detection and use this value directly
 }
 
 export async function crawl(options: CrawlOptions): Promise<ScanResult> {
@@ -64,7 +65,7 @@ export async function crawl(options: CrawlOptions): Promise<ScanResult> {
     }
 
     const results: PageScanResult[] = [];
-    let framework: string | undefined;
+    let framework: string | undefined = options.framework;
 
     for (const pageUrl of pagesToVisit) {
       const page = await context.newPage();
