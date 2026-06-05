@@ -1,12 +1,14 @@
 import type { Violation } from '../engine/types.js';
-import type { AIProvider, AIFix } from './types.js';
+import type { AIFix } from './types.js';
 import { buildPrompt } from './prompt.js';
 import { buildPatchPrompt } from './patch-prompt.js';
-import { groupViolations, type ViolationGroup } from './group.js';
-import { fallbackExplanation } from './fallback-explanation.js';
+import { groupViolations } from './group.js';
+import { BaseAIProvider } from './base.js';
 
-export class OllamaProvider implements AIProvider {
-  constructor(private baseUrl = 'http://localhost:11434', private model = 'llama3') {}
+export class OllamaProvider extends BaseAIProvider {
+  constructor(private baseUrl = 'http://localhost:11434', private model = 'llama3') {
+    super();
+  }
 
   async generateFixes(violations: Violation[], strategy: 'rule' | 'none' = 'rule', framework?: string): Promise<AIFix[]> {
     if (violations.length === 0) return [];
@@ -51,28 +53,5 @@ export class OllamaProvider implements AIProvider {
     if (!response.ok) throw new Error(`Ollama error: ${response.status}. Is Ollama running? Run: ollama serve`);
     const data = await response.json() as { response: string };
     return data.response ?? '';
-  }
-
-  private fallback(groups: ViolationGroup[], framework?: string): AIFix[] {
-    return groups.map((g) => this.fallbackFix(g, framework));
-  }
-
-  private fallbackFix(g: ViolationGroup, framework?: string): AIFix {
-    const v = g.representative;
-    const selectorList = g.selectors.map((s) => `- ${s}`).join('\n');
-    const explanation = fallbackExplanation(g.ruleId, g.description, g.wcag, g.level);
-    const fwNote = framework ? `This project uses ${framework}. ` : '';
-    const prompt = g.count > 1
-      ? `${fwNote}Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected elements (${g.count} instances):\n${selectorList}\n\nRepresentative HTML:\n\`${v.html.slice(0, 300)}\`\n\nApply the fix to all ${g.count} instances in the codebase to comply with WCAG 2.1 SC ${g.wcag}.`
-      : `${fwNote}Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected element:\n- Selector: \`${g.selectors[0]}\`\n- HTML: \`${v.html.slice(0, 300)}\`\n\nApply the fix to comply with WCAG 2.1 SC ${g.wcag}.`;
-    return {
-      ruleId: g.ruleId,
-      selectors: g.selectors,
-      instanceCount: g.count,
-      explanation,
-      fixedCode: v.html,
-      wcagReference: `WCAG 2.1 SC ${g.wcag}`,
-      optimalPrompt: prompt,
-    };
   }
 }

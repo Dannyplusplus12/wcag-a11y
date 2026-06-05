@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { loadConfig, initConfig, type Config } from './config.js';
+import { loadConfig, initConfig, type Config, type ProviderName } from './config.js';
 import { crawl } from './crawler.js';
 import { createAIProvider } from './ai/index.js';
 import { groupViolations } from './ai/group.js';
@@ -15,13 +15,13 @@ const program = new Command();
 program
   .name('wcag-a11y')
   .description('WCAG 2.1/2.2 accessibility auditor with AI-powered fixes')
-  .version('0.3.6');
+  .version('0.4.0');
 
 program
   .command('init')
   .description('Create a11y.config.json in the current directory')
-  .option('--provider <name>', 'AI provider to configure (gemini|openai|ollama)', 'gemini')
-  .action((opts: { provider: Config['provider'] }) => {
+  .option('--provider <name>', 'AI provider to configure (gemini|openai|ollama|anthropic|mistral|groq|cohere|xai|deepseek|together|perplexity|azure-openai)', 'gemini')
+  .action((opts: { provider: ProviderName }) => {
     initConfig(opts.provider);
   });
 
@@ -38,7 +38,7 @@ program
   .option('--fast-mode', 'Output only AI fix prompts — no summaries or explanations', false)
   .option('--group <strategy>', 'Group violations by rule or show individually (rule|none)', 'rule')
   .option('--ci', 'Exit with code 1 if any violations are found (for CI/CD pipelines)', false)
-  .option('--provider <name>', 'Override the AI provider from config (gemini|openai|ollama)')
+  .option('--provider <name>', 'Override the AI provider from config (gemini|openai|ollama|anthropic|mistral|groq|cohere|xai|deepseek|together|perplexity|azure-openai)')
   .action(async (opts: { url: string; pages: string[]; crawl: boolean; report: boolean; ai: boolean; explain: boolean; terminal: boolean; fastMode: boolean; group: string; ci: boolean; provider?: string; }) => {
     try {
       console.log(`\nScanning ${opts.url}...`);
@@ -93,7 +93,7 @@ program
   .option('-c, --crawl', 'Auto-discover pages by following same-origin links', false)
   .option('--from-report [path]', 'Use an existing report instead of scanning (default: a11y-report.md)')
   .option('--apply', 'Write fixes to source files (default: dry-run, shows diff only)', false)
-  .option('--provider <name>', 'Override the AI provider from config (gemini|openai|ollama)')
+  .option('--provider <name>', 'Override the AI provider from config (gemini|openai|ollama|anthropic|mistral|groq|cohere|xai|deepseek|together|perplexity|azure-openai)')
   .action(async (opts: { url?: string; pages: string[]; crawl: boolean; fromReport?: string | boolean; apply: boolean; provider?: string }) => {
     if (!opts.url && !opts.fromReport) {
       console.error('\nError: provide --url <url> to scan, or --from-report [path] to load an existing report.');

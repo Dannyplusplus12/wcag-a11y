@@ -69,16 +69,21 @@ npm install -g wcag-a11y
 ## Setup
 
 ```bash
-wcag-a11y init                       # Gemini (free, default)
-wcag-a11y init --provider openai     # OpenAI
-wcag-a11y init --provider ollama     # Local — no API key needed
+wcag-a11y init                            # Gemini (free, default)
+wcag-a11y init --provider openai          # OpenAI
+wcag-a11y init --provider anthropic       # Anthropic Claude
+wcag-a11y init --provider mistral         # Mistral
+wcag-a11y init --provider groq            # Groq (fast inference)
+wcag-a11y init --provider cohere          # Cohere
+wcag-a11y init --provider xai             # xAI Grok
+wcag-a11y init --provider deepseek        # DeepSeek
+wcag-a11y init --provider together        # Together AI (open-source models)
+wcag-a11y init --provider perplexity      # Perplexity
+wcag-a11y init --provider azure-openai    # Azure OpenAI
+wcag-a11y init --provider ollama          # Local — no API key needed
 ```
 
 Each command creates an `a11y.config.json` pre-wired for that provider. Fill in your API key, then scan.
-
-**Get a free Gemini key:** https://aistudio.google.com  
-**Get an OpenAI key:** https://platform.openai.com/api-keys  
-**Ollama (local):** install from https://ollama.com, then run `ollama serve`
 
 ---
 
@@ -113,7 +118,7 @@ wcag-a11y init --provider ollama     # Ollama (local)
 
 | Flag | Description |
 |---|---|
-| `--provider <name>` | Which provider to configure: `gemini` (default), `openai`, or `ollama`. Determines which fields are written to the config file. |
+| `--provider <name>` | Which provider to configure. Valid values: `gemini` (default), `openai`, `anthropic`, `mistral`, `groq`, `cohere`, `xai`, `deepseek`, `together`, `perplexity`, `azure-openai`, `ollama`. Determines which fields are written to the config file. |
 
 ---
 
@@ -138,7 +143,7 @@ wcag-a11y scan -u http://localhost:3000 --no-ai --ci
 | `--no-explain` | off | Print only the ready-to-paste prompt for each fix, without the AI explanation |
 | `--group <strategy>` | `rule` | `rule` (default) groups all violations of the same type into one fix prompt. `none` produces a separate prompt per element. Use `none` when violations of the same rule need different fixes |
 | `--ci` | off | Exit with code `1` if any violations are found. Use this to fail a CI pipeline |
-| `--provider <name>` | from config | Override the AI provider for this run: `gemini`, `openai`, or `ollama`. Does not modify the config file |
+| `--provider <name>` | from config | Override the AI provider for this run. See [AI Providers](#ai-providers) for valid names. Does not modify the config file |
 
 ---
 
@@ -195,7 +200,7 @@ src/components/Navbar.jsx — 2 violation(s)
 | `-c, --crawl` | off | Auto-discover pages by following same-origin links |
 | `--from-report [path]` | `a11y-report.md` | Load violations from an existing report instead of scanning. Useful when you already ran `scan --report` and just want to apply fixes |
 | `--apply` | off | Write patched files to disk (dry-run without this flag) |
-| `--provider <name>` | from config | Override AI provider for this run: `gemini`, `openai`, or `ollama` |
+| `--provider <name>` | from config | Override AI provider for this run. See [AI Providers](#ai-providers) for valid names |
 
 > **Tip:** Always run without `--apply` first to review the diff. The dry-run is safe — nothing is written to disk.
 
@@ -210,17 +215,30 @@ wcag-a11y fix --from-report --apply                 # patch files from that repo
 
 ## AI Providers
 
-| Provider | Model | Cost | API Key |
-|---|---|---|---|
-| `gemini` (default) | `gemini-2.5-flash` | Free tier | [aistudio.google.com](https://aistudio.google.com) |
-| `openai` | `gpt-4o-mini` | Pay-per-use | [platform.openai.com](https://platform.openai.com/api-keys) |
-| `ollama` | `llama3` | Free (local) | None — run `ollama serve` |
+12 providers are supported. Set your provider in `a11y.config.json` or override per-run with `--provider <name>`.
 
-Set your provider in `a11y.config.json` or override it per-run with `--provider`. If the AI response is unparseable, the tool generates a fix prompt directly from the violation data so you always get something actionable.
+| Provider | `--provider` name | Default model | API key source |
+|---|---|---|---|
+| Google Gemini | `gemini` *(default)* | `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com) — free tier |
+| OpenAI | `openai` | `gpt-4o-mini` | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| Anthropic | `anthropic` | `claude-sonnet-4-6` | [console.anthropic.com](https://console.anthropic.com) |
+| Mistral | `mistral` | `mistral-large-latest` | [console.mistral.ai](https://console.mistral.ai) |
+| Groq | `groq` | `llama-3.3-70b-versatile` | [console.groq.com](https://console.groq.com) |
+| Cohere | `cohere` | `command-r-plus` | [dashboard.cohere.com](https://dashboard.cohere.com) |
+| xAI | `xai` | `grok-2` | [console.x.ai](https://console.x.ai) |
+| DeepSeek | `deepseek` | `deepseek-chat` | [platform.deepseek.com](https://platform.deepseek.com) |
+| Together AI | `together` | `meta-llama/Llama-3-70b-chat-hf` | [api.together.xyz](https://api.together.xyz) |
+| Perplexity | `perplexity` | `llama-3.1-sonar-large-128k-online` | [perplexity.ai/settings/api](https://www.perplexity.ai/settings/api) |
+| Azure OpenAI | `azure-openai` | *(your deployment)* | [portal.azure.com](https://portal.azure.com) |
+| Ollama | `ollama` | `llama3` | None — run `ollama serve` locally |
+
+All models are configurable. Change the model field in `a11y.config.json` to use any model your API key has access to. If the AI response is unparseable, the tool generates a fix prompt directly from the violation data so you always get something actionable.
 
 ---
 
 ## Config (`a11y.config.json`)
+
+Only the fields for your active `provider` are required. This file is gitignored by default.
 
 ```json
 {
@@ -232,12 +250,39 @@ Set your provider in `a11y.config.json` or override it per-run with `--provider`
   "openaiApiKey": "YOUR_OPENAI_API_KEY",
   "openaiModel": "gpt-4o-mini",
 
+  "anthropicApiKey": "YOUR_ANTHROPIC_API_KEY",
+  "anthropicModel": "claude-sonnet-4-6",
+
+  "mistralApiKey": "YOUR_MISTRAL_API_KEY",
+  "mistralModel": "mistral-large-latest",
+
+  "groqApiKey": "YOUR_GROQ_API_KEY",
+  "groqModel": "llama-3.3-70b-versatile",
+
+  "cohereApiKey": "YOUR_COHERE_API_KEY",
+  "cohereModel": "command-r-plus",
+
+  "xaiApiKey": "YOUR_XAI_API_KEY",
+  "xaiModel": "grok-2",
+
+  "deepseekApiKey": "YOUR_DEEPSEEK_API_KEY",
+  "deepseekModel": "deepseek-chat",
+
+  "togetherApiKey": "YOUR_TOGETHER_API_KEY",
+  "togetherModel": "meta-llama/Llama-3-70b-chat-hf",
+
+  "perplexityApiKey": "YOUR_PERPLEXITY_API_KEY",
+  "perplexityModel": "llama-3.1-sonar-large-128k-online",
+
+  "azureOpenaiApiKey": "YOUR_AZURE_KEY",
+  "azureOpenaiEndpoint": "https://YOUR_RESOURCE.openai.azure.com",
+  "azureOpenaiDeployment": "YOUR_DEPLOYMENT_NAME",
+  "azureOpenaiApiVersion": "2024-10-01-preview",
+
   "ollamaBaseUrl": "http://localhost:11434",
   "ollamaModel": "llama3"
 }
 ```
-
-Only the fields for your active provider are required. This file is gitignored by default.
 
 ---
 
