@@ -1,7 +1,25 @@
 {
   "name": "wcag-a11y",
   "version": "0.4.0",
-  "description": "WCAG 2.1/2.2 accessibility auditor with AI-powered fixes",
+  "description": "WCAG 2.1/2.2 accessibility auditor with AI-powered fixes. Crawls your dev server with Playwright, runs 40+ checks, and uses AI (12 providers) to generate fix prompts or patch source files directly.",
+  "keywords": [
+    "wcag",
+    "accessibility",
+    "a11y",
+    "wcag2",
+    "wcag21",
+    "wcag22",
+    "aria",
+    "playwright",
+    "ai",
+    "audit",
+    "fix",
+    "cli",
+    "gemini",
+    "openai",
+    "anthropic",
+    "screen-reader"
+  ],
   "type": "module",
   "bin": {
     "wcag-a11y": "dist/cli.js"

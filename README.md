@@ -56,7 +56,7 @@ Generating AI fixes for 7 violations...
 
 The **prompt** at the end of each fix is what you copy into Cursor, Copilot, or Claude. It includes the affected selectors, the WCAG rule, and exactly what needs to change — no rewriting needed.
 
-With `--report`, the full output is also saved to `a11y-report.md`.
+The full output is saved to `a11y-report.md` by default. Pass `--no-report` to skip.
 
 ---
 
@@ -96,13 +96,13 @@ Scan a built-in page with 10 intentional violations. No dev server or config req
 ```bash
 wcag-a11y demo                  # violations + AI fixes (default, requires config)
 wcag-a11y demo --no-ai          # violations only, no AI — faster
-wcag-a11y demo --report         # + save a11y-report.md
+wcag-a11y demo --no-report      # skip saving a11y-report.md
 ```
 
 | Flag | Description |
 |---|---|
 | `--no-ai` | Skip AI fix generation — prints violations only, no prompts |
-| `-r, --report` | Save the full report to `a11y-report.md` in the current directory |
+| `--no-report` | Skip saving report to `a11y-report.md` (report is saved by default) |
 
 ---
 
@@ -129,8 +129,9 @@ Scan a running dev server for accessibility violations.
 ```bash
 wcag-a11y scan -u http://localhost:3000
 wcag-a11y scan -u http://localhost:3000 --pages / /about /contact
-wcag-a11y scan -u http://localhost:3000 --crawl --report
+wcag-a11y scan -u http://localhost:3000 --crawl
 wcag-a11y scan -u http://localhost:3000 --no-ai --ci
+wcag-a11y scan -u http://localhost:3000 --terminal --fast-mode
 ```
 
 | Flag | Default | Description |
@@ -138,9 +139,11 @@ wcag-a11y scan -u http://localhost:3000 --no-ai --ci
 | `-u, --url <url>` | required | Base URL of your running dev server |
 | `-p, --pages <pages...>` | `/` | One or more paths to scan. Separate with spaces: `--pages / /about /contact` |
 | `-c, --crawl` | off | Follow same-origin links and scan all reachable pages automatically |
-| `-r, --report` | off | Save the full scan output to `a11y-report.md` |
+| `--no-report` | on | Skip saving scan output to `a11y-report.md` (report is saved by default) |
 | `--no-ai` | on | Skip AI fix generation — scan runs faster and prints violations only |
-| `--no-explain` | off | Print only the ready-to-paste prompt for each fix, without the AI explanation |
+| `--no-explain` | on | Print only the ready-to-paste prompt for each fix, without the AI explanation |
+| `--terminal` | off | Print violations summary and AI fix prompts to terminal |
+| `--fast-mode` | off | Output only AI fix prompts — no summaries, explanations, or progress messages |
 | `--group <strategy>` | `rule` | `rule` (default) groups all violations of the same type into one fix prompt. `none` produces a separate prompt per element. Use `none` when violations of the same rule need different fixes |
 | `--ci` | off | Exit with code `1` if any violations are found. Use this to fail a CI pipeline |
 | `--provider <name>` | from config | Override the AI provider for this run. See [AI Providers](#ai-providers) for valid names. Does not modify the config file |
@@ -207,8 +210,8 @@ src/components/Navbar.jsx — 2 violation(s)
 **Common workflow:** run `scan --report` to generate a report for review, then run `fix --from-report --apply` to patch the files — no second browser crawl needed.
 
 ```bash
-wcag-a11y scan -u http://localhost:3000 --report   # review a11y-report.md
-wcag-a11y fix --from-report --apply                 # patch files from that report
+wcag-a11y scan -u http://localhost:3000            # generates a11y-report.md automatically
+wcag-a11y fix --from-report --apply                # patch files from that report
 ```
 
 ---
