@@ -2,17 +2,17 @@
 
 [![CI](https://github.com/Dannyplusplus12/WCAG-A11y/actions/workflows/ci.yml/badge.svg)](https://github.com/Dannyplusplus12/WCAG-A11y/actions/workflows/ci.yml)
 
-Most accessibility auditors stop at detection — they tell you *what* is broken and leave the rest to you. `wcag-a11y` goes further. It crawls your running dev server with Playwright, runs 40+ WCAG 2.1/2.2 checks, and uses AI to generate ready-to-paste fix prompts **or write the fixes directly into your source files**.
+Most accessibility auditors stop at detection — they tell you *what* is broken and leave the rest to you. `wcag-a11y` crawls your running dev server with Playwright, runs 40+ WCAG 2.1/2.2 checks, and uses AI to generate ready-to-paste fix prompts **or write the fixes directly into your source files**.
 
 Two modes:
-- **`scan`** — find violations + generate AI prompts you paste into Cursor, Copilot, or Claude
+- **`scan`** — find violations + get AI prompts you paste into Cursor, Copilot, or Claude
 - **`fix`** — find violations + patch source files automatically (dry-run by default, `--apply` to write)
 
 ---
 
 ## Try it instantly
 
-No dev server, no config, no setup:
+No dev server, no config:
 
 ```bash
 npx wcag-a11y demo
@@ -22,41 +22,50 @@ npx wcag-a11y demo
 
 ## What the output looks like
 
-Running a scan prints a violation summary per page, then AI-generated fixes for each rule:
-
 ```
-Scanning http://localhost:3000...
+WCAG A11y — scan complete
+────────────────────────────────────────────────────────────
 
-  /
-  ✖  critical   img-alt                  3 violations
-  ✖  serious    color-contrast-text      2 violations
-  ✖  serious    label-missing            1 violation
-  ✖  moderate   no-positive-tabindex     1 violation
+  ✖  http://localhost:3000  3 critical  4 serious  3 moderate
 
-  7 violations across 1 page
+     [CRITICAL] Images must have an alt attribute  WCAG 1.1.1
+     → img
+     [CRITICAL] Form inputs must have an associated label  WCAG 1.3.1
+     → input[type="email"]
+     [CRITICAL] Buttons must have an accessible name  WCAG 4.1.2
+     → button[type="submit"]
+     [SERIOUS]  Normal text must meet 4.5:1 contrast ratio  WCAG 1.4.3
+     → p
+     [SERIOUS]  Links must have descriptive text  WCAG 2.4.4
+     → a[href="/sale"]
+     … and 5 more
 
-Generating AI fixes for 7 violations...
+────────────────────────────────────────────────────────────
+Total: 3 critical · 4 serious · 3 moderate
 
-────────────────────────────────────────────
-[img-alt] — 3 elements affected
-  #hero-img  #logo  #banner
+AI Fix Prompts — paste any of these into Cursor, Copilot, or Claude
+────────────────────────────────────────────────────────────
 
-  Why it matters:
-  Screen readers cannot describe the image to blind users without an alt attribute.
-  Users relying on assistive technology receive no information about the image content.
+[img-alt]
+  → img
+  Screen reader users hear nothing for this image — branding, instructions,
+  or data it conveys is completely invisible to them.
+┌─ Copy this prompt ──────────────────────────────────────
+│ Fix WCAG 1.1.1 (Level A) — img is missing an alt attribute
+│
+│ Current HTML:
+│   <img src="banner.jpg">
+│
+│ How to fix:
+│   Add alt text describing the image content.
+│   Use alt="" if the image is purely decorative.
+│   Example: <img src="banner.jpg" alt="Summer sale — 50% off">
+└─────────────────────────────────────────────────────────
 
-  Fixed HTML:
-  <img src="banner.jpg" alt="Summer sale — up to 50% off">
-
-  Prompt for your AI editor:
-  Fix accessibility: 3 <img> elements (#hero-img, #logo, #banner) are missing alt
-  attributes, violating WCAG 1.1.1. Add descriptive alt text to each image.
-────────────────────────────────────────────
+… 9 more prompts — full report saved to a11y-report.md
 ```
 
-The **prompt** at the end of each fix is what you copy into Cursor, Copilot, or Claude. It includes the affected selectors, the WCAG rule, and exactly what needs to change — no rewriting needed.
-
-The full output is saved to `a11y-report.md` by default. Pass `--no-report` to skip.
+Each prompt tells you the WCAG criterion, shows the broken element, and gives the exact fix — ready to paste into your AI editor.
 
 ---
 
@@ -66,61 +75,21 @@ The full output is saved to `a11y-report.md` by default. Pass `--no-report` to s
 npm install -g wcag-a11y
 ```
 
-## Setup
+## Quick start
 
 ```bash
-wcag-a11y init                            # Gemini (free, default)
-wcag-a11y init --provider openai          # OpenAI
-wcag-a11y init --provider anthropic       # Anthropic Claude
-wcag-a11y init --provider mistral         # Mistral
-wcag-a11y init --provider groq            # Groq (fast inference)
-wcag-a11y init --provider cohere          # Cohere
-wcag-a11y init --provider xai             # xAI Grok
-wcag-a11y init --provider deepseek        # DeepSeek
-wcag-a11y init --provider together        # Together AI (open-source models)
-wcag-a11y init --provider perplexity      # Perplexity
-wcag-a11y init --provider azure-openai    # Azure OpenAI
-wcag-a11y init --provider ollama          # Local — no API key needed
+# 1. Configure your AI provider (Gemini is free, no credit card)
+wcag-a11y init
+
+# 2. Start your dev server, then scan
+wcag-a11y scan -u http://localhost:3000
 ```
 
-Each command creates an `a11y.config.json` pre-wired for that provider. Fill in your API key, then scan.
+Add `--pages / /about /contact` to scan specific routes, or `--crawl` to follow links automatically.
 
 ---
 
 ## Commands
-
-### `wcag-a11y demo`
-
-Scan a built-in page with 10 intentional violations. No dev server or config required — useful for trying the tool before pointing it at your own project.
-
-```bash
-wcag-a11y demo                  # violations + AI fixes (default, requires config)
-wcag-a11y demo --no-ai          # violations only, no AI — faster
-wcag-a11y demo --no-report      # skip saving a11y-report.md
-```
-
-| Flag | Description |
-|---|---|
-| `--no-ai` | Skip AI fix generation — prints violations only, no prompts |
-| `--no-report` | Skip saving report to `a11y-report.md` (report is saved by default) |
-
----
-
-### `wcag-a11y init`
-
-Create `a11y.config.json` in the current directory, pre-configured for your chosen provider.
-
-```bash
-wcag-a11y init                       # Gemini (default)
-wcag-a11y init --provider openai     # OpenAI
-wcag-a11y init --provider ollama     # Ollama (local)
-```
-
-| Flag | Description |
-|---|---|
-| `--provider <name>` | Which provider to configure. Valid values: `gemini` (default), `openai`, `anthropic`, `mistral`, `groq`, `cohere`, `xai`, `deepseek`, `together`, `perplexity`, `azure-openai`, `ollama`. Determines which fields are written to the config file. |
-
----
 
 ### `wcag-a11y scan`
 
@@ -137,16 +106,16 @@ wcag-a11y scan -u http://localhost:3000 --terminal --fast-mode
 | Flag | Default | Description |
 |---|---|---|
 | `-u, --url <url>` | required | Base URL of your running dev server |
-| `-p, --pages <pages...>` | `/` | One or more paths to scan. Separate with spaces: `--pages / /about /contact` |
-| `-c, --crawl` | off | Follow same-origin links and scan all reachable pages automatically |
-| `--no-report` | on | Skip saving scan output to `a11y-report.md` (report is saved by default) |
-| `--no-ai` | on | Skip AI fix generation — scan runs faster and prints violations only |
-| `--no-explain` | on | Print only the ready-to-paste prompt for each fix, without the AI explanation |
-| `--terminal` | off | Print violations summary and AI fix prompts to terminal |
-| `--fast-mode` | off | Output only AI fix prompts — no summaries, explanations, or progress messages |
-| `--group <strategy>` | `rule` | `rule` (default) groups all violations of the same type into one fix prompt. `none` produces a separate prompt per element. Use `none` when violations of the same rule need different fixes |
-| `--ci` | off | Exit with code `1` if any violations are found. Use this to fail a CI pipeline |
-| `--provider <name>` | from config | Override the AI provider for this run. See [AI Providers](#ai-providers) for valid names. Does not modify the config file |
+| `-p, --pages <paths...>` | `/` | Paths to scan. Space-separated: `--pages / /about /contact` |
+| `-c, --crawl` | off | Follow same-origin links and scan all reachable pages |
+| `--no-ai` | — | Skip AI fix generation — scan runs faster, violations only |
+| `--no-report` | — | Skip saving `a11y-report.md` |
+| `--no-explain` | — | Omit explanations, show prompts only |
+| `--terminal` | off | Print violations and AI prompts to terminal |
+| `--fast-mode` | off | Output only the raw prompts — no summaries or decoration |
+| `--group <strategy>` | `rule` | `rule`: one prompt per rule type. `none`: one prompt per element |
+| `--ci` | off | Exit with code `1` if any violations are found |
+| `--provider <name>` | from config | Override AI provider for this run |
 
 ---
 
@@ -155,34 +124,13 @@ wcag-a11y scan -u http://localhost:3000 --terminal --fast-mode
 Scan for violations and apply AI-generated patches directly to your source files. Works with any framework — React, Vue, Angular, Svelte, or plain HTML.
 
 ```bash
-# Dry-run: scan and show what would change (safe, no files written)
-wcag-a11y fix -u http://localhost:3000
-
-# Preview specific pages
-wcag-a11y fix -u http://localhost:3000 --pages / /about /contact
-
-# Write fixes to disk
-wcag-a11y fix -u http://localhost:3000 --apply
-
-# Auto-discover pages + write fixes
-wcag-a11y fix -u http://localhost:3000 --crawl --apply
-
-# Skip rescanning — load violations from an existing report
-wcag-a11y fix --from-report
-wcag-a11y fix --from-report ./reports/a11y-report.md --apply
+wcag-a11y fix -u http://localhost:3000               # dry-run: show diff, nothing written
+wcag-a11y fix -u http://localhost:3000 --apply       # write fixes to disk
+wcag-a11y fix --from-report --apply                  # patch from an existing report
 ```
 
-**How it works:**
-
-1. Runs the same scan as `wcag-a11y scan` (or loads an existing report with `--from-report`)
-2. For each violation, locates the source file — checks `violation.source` (React dev mode) first, then falls back to grepping `./src` for unique identifiers in the HTML snippet (`id=`, `name=`, `for=`, local `src=`, text content)
-3. Groups violations by file (multiple violations in the same file → one AI call)
-4. Sends the full file content + violation list to your configured AI provider and asks for the corrected file
-5. Shows a colored diff before writing anything
-6. With `--apply`, overwrites the file; without it, only prints the diff
-
 ```
-src/components/Navbar.jsx — 2 violation(s)
+src/components/Navbar.jsx — 2 violations
   · [button-name] Buttons must have an accessible name
   · [aria-valid-role] Elements must use valid ARIA roles
 
@@ -196,52 +144,85 @@ src/components/Navbar.jsx — 2 violation(s)
   +     <li>Home</li>
 ```
 
-| Flag | Default | Description |
-|---|---|---|
-| `-u, --url <url>` | — | Base URL of your running dev server. Required unless `--from-report` is used |
-| `-p, --pages <pages...>` | `/` | Specific pages to scan |
-| `-c, --crawl` | off | Auto-discover pages by following same-origin links |
-| `--from-report [path]` | `a11y-report.md` | Load violations from an existing report instead of scanning. Useful when you already ran `scan --report` and just want to apply fixes |
-| `--apply` | off | Write patched files to disk (dry-run without this flag) |
-| `--provider <name>` | from config | Override AI provider for this run. See [AI Providers](#ai-providers) for valid names |
-
-> **Tip:** Always run without `--apply` first to review the diff. The dry-run is safe — nothing is written to disk.
-
-**Common workflow:** run `scan --report` to generate a report for review, then run `fix --from-report --apply` to patch the files — no second browser crawl needed.
+**Common workflow:** scan first to review, then patch:
 
 ```bash
-wcag-a11y scan -u http://localhost:3000            # generates a11y-report.md automatically
-wcag-a11y fix --from-report --apply                # patch files from that report
+wcag-a11y scan -u http://localhost:3000   # generates a11y-report.md
+wcag-a11y fix --from-report --apply       # patches files from that report, no second crawl
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `-u, --url <url>` | — | Base URL. Required unless `--from-report` is used |
+| `-p, --pages <paths...>` | `/` | Paths to scan |
+| `-c, --crawl` | off | Auto-discover pages by following same-origin links |
+| `--from-report [path]` | `a11y-report.md` | Load violations from an existing report instead of rescanning |
+| `--apply` | off | Write fixes to disk (dry-run without this flag) |
+| `--provider <name>` | from config | Override AI provider for this run |
+
+---
+
+### `wcag-a11y init`
+
+Create `a11y.config.json` pre-configured for your chosen provider.
+
+```bash
+wcag-a11y init                          # Gemini (free, default)
+wcag-a11y init --provider openai
+wcag-a11y init --provider anthropic
+wcag-a11y init --provider ollama        # local — no API key needed
+# … and 8 more providers
+```
+
+---
+
+### `wcag-a11y demo`
+
+Scan a built-in page with 10 intentional violations. No dev server or config required — useful for trying the tool before pointing it at your own project.
+
+```bash
+wcag-a11y demo           # violations + AI fix prompts (requires config)
+wcag-a11y demo --no-ai  # violations only, no AI
 ```
 
 ---
 
 ## AI Providers
 
-12 providers are supported. Set your provider in `a11y.config.json` or override per-run with `--provider <name>`.
+12 providers supported. Configure once in `a11y.config.json`, or override per-run with `--provider`.
 
-| Provider | `--provider` name | Default model | API key source |
+| Provider | `--provider` | Default model | Notes |
 |---|---|---|---|
-| Google Gemini | `gemini` *(default)* | `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com) — free tier |
-| OpenAI | `openai` | `gpt-4o-mini` | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| Anthropic | `anthropic` | `claude-sonnet-4-6` | [console.anthropic.com](https://console.anthropic.com) |
-| Mistral | `mistral` | `mistral-large-latest` | [console.mistral.ai](https://console.mistral.ai) |
-| Groq | `groq` | `llama-3.3-70b-versatile` | [console.groq.com](https://console.groq.com) |
-| Cohere | `cohere` | `command-r-plus` | [dashboard.cohere.com](https://dashboard.cohere.com) |
-| xAI | `xai` | `grok-2` | [console.x.ai](https://console.x.ai) |
-| DeepSeek | `deepseek` | `deepseek-chat` | [platform.deepseek.com](https://platform.deepseek.com) |
-| Together AI | `together` | `meta-llama/Llama-3-70b-chat-hf` | [api.together.xyz](https://api.together.xyz) |
-| Perplexity | `perplexity` | `llama-3.1-sonar-large-128k-online` | [perplexity.ai/settings/api](https://www.perplexity.ai/settings/api) |
-| Azure OpenAI | `azure-openai` | *(your deployment)* | [portal.azure.com](https://portal.azure.com) |
-| Ollama | `ollama` | `llama3` | None — run `ollama serve` locally |
+| Google Gemini | `gemini` *(default)* | `gemini-2.5-flash` | Free tier available |
+| OpenAI | `openai` | `gpt-4o-mini` | |
+| Anthropic | `anthropic` | `claude-sonnet-4-6` | |
+| Mistral | `mistral` | `mistral-large-latest` | |
+| Groq | `groq` | `llama-3.3-70b-versatile` | Fast inference |
+| Cohere | `cohere` | `command-r-plus` | |
+| xAI | `xai` | `grok-2` | |
+| DeepSeek | `deepseek` | `deepseek-chat` | |
+| Together AI | `together` | `meta-llama/Llama-3-70b-chat-hf` | Open-source models |
+| Perplexity | `perplexity` | `llama-3.1-sonar-large-128k-online` | |
+| Azure OpenAI | `azure-openai` | *(your deployment)* | |
+| Ollama | `ollama` | `llama3` | Local — no API key |
 
-All models are configurable. Change the model field in `a11y.config.json` to use any model your API key has access to. If the AI response is unparseable, the tool generates a fix prompt directly from the violation data so you always get something actionable.
+All models are configurable. If the AI response is unparseable, the tool generates a fix prompt directly from the violation data — you always get something actionable.
 
 ---
 
-## Config (`a11y.config.json`)
+## Config
 
-Only the fields for your active `provider` are required. This file is gitignored by default.
+Run `wcag-a11y init` to generate `a11y.config.json`. Only fill in the fields for your chosen provider. This file is gitignored by default.
+
+```json
+{
+  "provider": "gemini",
+  "apiKey": "YOUR_GEMINI_API_KEY"
+}
+```
+
+<details>
+<summary>Full config reference (all 12 providers)</summary>
 
 ```json
 {
@@ -287,11 +268,16 @@ Only the fields for your active `provider` are required. This file is gitignored
 }
 ```
 
+</details>
+
 ---
 
 ## What it checks
 
-40+ rules across 10 categories, mapped to WCAG 2.1/2.2 success criteria.
+40+ rules across 10 WCAG 2.1/2.2 categories: Text Alternatives, Color Contrast, Forms, Keyboard, ARIA, Structure, Links, Media, Tables, and Language.
+
+<details>
+<summary>Full rule list</summary>
 
 ### Text Alternatives — WCAG 1.1.1
 
@@ -393,6 +379,8 @@ Only the fields for your active `provider` are required. This file is gitignored
 |---|---|---|
 | `html-lang` | serious | `<html>` must have a `lang` attribute |
 | `html-lang-valid` | serious | `lang` attribute must be a valid BCP 47 language tag |
+
+</details>
 
 ---
 

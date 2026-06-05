@@ -1,4 +1,5 @@
 import type { ViolationGroup } from './group.js';
+import { getFix, getFixCategory } from './fallback-fix.js';
 
 const FRAMEWORK_SYNTAX: Record<string, string> = {
   'Next.js': 'React/TSX (JSX)',
@@ -16,14 +17,18 @@ export function buildPrompt(groups: ViolationGroup[], framework?: string): strin
   const syntax = framework ? (FRAMEWORK_SYNTAX[framework] ?? 'JSX/TSX') : null;
 
   const items = groups
-    .map(
-      (g, i) => `${i + 1}. Rule: ${g.ruleId} | WCAG ${g.wcag} (Level ${g.level}) | Impact: ${g.impact}
+    .map((g, i) => {
+      const fixHint = getFix(g.ruleId);
+      const category = getFixCategory(g.ruleId) ?? 'edit-element';
+      const fixLine = fixHint ? `\n   Fix guidance: ${fixHint}` : '';
+      const categoryLine = `\n   Fix type: ${category}`;
+      return `${i + 1}. Rule: ${g.ruleId} | WCAG ${g.wcag} (Level ${g.level}) | Impact: ${g.impact}
    Page: ${g.page}
    Instances: ${g.count} element(s)
    Selectors: ${g.selectors.join(', ')}
    Representative Element: ${g.representative.html}
-   Problem: ${g.description}`
-    )
+   Problem: ${g.description}${categoryLine}${fixLine}`;
+    })
     .join('\n\n');
 
   const frameworkLine = framework
@@ -31,12 +36,12 @@ export function buildPrompt(groups: ViolationGroup[], framework?: string): strin
     : '';
 
   const fixedCodeInstruction = syntax
-    ? `"fixedCode": the corrected snippet in ${syntax} syntax (component/template code only — no imports, no surrounding boilerplate)`
-    : `"fixedCode": the corrected HTML snippet only (no explanation, just code)`;
+    ? `"fixedCode": include ONLY when the violation's "Fix type" is "edit-element". Show the corrected ${syntax} snippet — NOT a copy of the original broken element. Omit this field entirely for "add-elsewhere", "change-css", and "restructure" violations.`
+    : `"fixedCode": include ONLY when the violation's "Fix type" is "edit-element". Show the corrected HTML snippet — NOT a copy of the original broken element. Omit this field entirely for "add-elsewhere", "change-css", and "restructure" violations.`;
 
   const optimalPromptInstruction = framework
-    ? `"optimalPrompt": a ready-to-paste prompt for an AI coding assistant (Cursor, Copilot, Claude) working in a ${framework} codebase. Structure it as: (1) state the WCAG 2.1/2.2 criterion being violated, (2) list the affected selectors and HTML snippets, (3) state the exact change needed in ${syntax} syntax. Focus solely on the fix.`
-    : `"optimalPrompt": a ready-to-paste prompt for an AI coding assistant (Cursor, Copilot, Claude). Structure it as: (1) state the WCAG 2.1/2.2 criterion being violated, (2) list the affected selectors and HTML snippets, (3) state the exact change needed. Focus solely on the fix.`;
+    ? `"optimalPrompt": a ready-to-paste prompt for an AI coding assistant (Cursor, Copilot, Claude) working in a ${framework} codebase. Structure it as: (1) state the WCAG 2.1/2.2 criterion being violated, (2) quote the affected selector and current HTML, (3) provide the exact code change required in ${syntax} syntax — include a concrete before/after snippet or the specific element to add/modify/remove. The prompt must be actionable without requiring additional research.`
+    : `"optimalPrompt": a ready-to-paste prompt for an AI coding assistant (Cursor, Copilot, Claude). Structure it as: (1) state the WCAG 2.1/2.2 criterion being violated, (2) quote the affected selector and current HTML, (3) provide the exact code change required — include a concrete before/after snippet or the specific element to add/modify/remove. The prompt must be fully actionable: tell the developer exactly what to write, not just that something needs fixing.`;
 
   return `You are a WCAG accessibility expert. Analyze these violations and return a JSON array.${frameworkLine}
 Each item must have:

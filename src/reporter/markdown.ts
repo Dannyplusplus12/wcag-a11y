@@ -103,15 +103,13 @@ function buildFullReport(result: ScanResult, fixes: AIFix[]): string[] {
       }
 
       if (fix) {
+        lines.push('**Why it matters:**', fix.explanation, '');
+
+        if ((!fix.fixCategory || fix.fixCategory === 'edit-element') && fix.fixedCode) {
+          lines.push('**Fixed code:**', '```html', fix.fixedCode, '```', '');
+        }
+
         lines.push(
-          '**Why it matters:**',
-          fix.explanation,
-          '',
-          '**Fixed code:**',
-          '```html',
-          fix.fixedCode,
-          '```',
-          '',
           '**📋 Prompt for your AI assistant (Cursor / Copilot / Claude):**',
           '```',
           fix.optimalPrompt,

@@ -2,6 +2,7 @@ import type { Violation } from '../engine/types.js';
 import type { AIProvider, AIFix } from './types.js';
 import { groupViolations, type ViolationGroup } from './group.js';
 import { fallbackExplanation } from './fallback-explanation.js';
+import { getFix, getFixCategory } from './fallback-fix.js';
 
 export abstract class BaseAIProvider implements AIProvider {
   abstract generateFixes(violations: Violation[], strategy: 'rule' | 'none', framework?: string): Promise<AIFix[]>;
@@ -14,7 +15,7 @@ export abstract class BaseAIProvider implements AIProvider {
       return groups.map((g) => {
         const found = fixes.find((f) => f.ruleId === g.ruleId);
         return found
-          ? { ...found, selectors: g.selectors, instanceCount: g.count }
+          ? { ...found, selectors: g.selectors, instanceCount: g.count, fixCategory: getFixCategory(g.ruleId) }
           : this.fallbackFix(g, framework);
       });
     } catch {
@@ -28,18 +29,26 @@ export abstract class BaseAIProvider implements AIProvider {
 
   protected fallbackFix(g: ViolationGroup, framework?: string): AIFix {
     const v = g.representative;
-    const selectorList = g.selectors.map((s) => `- ${s}`).join('\n');
+    const selectorList = g.selectors.map((s) => `- \`${s}\``).join('\n');
     const explanation = fallbackExplanation(g.ruleId, g.description, g.wcag, g.level);
-    const fwNote = framework ? `This project uses ${framework}. ` : '';
+    const fwNote = framework ? `This project uses ${framework}.\n\n` : '';
+    const fixInstructions = getFix(g.ruleId);
+    const fixSection = fixInstructions ? `\n\nHow to fix:\n${fixInstructions}` : '';
+
     const prompt = g.count > 1
-      ? `${fwNote}Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected elements (${g.count} instances):\n${selectorList}\n\nRepresentative HTML:\n\`${v.html.slice(0, 300)}\`\n\nApply the fix to all ${g.count} instances in the codebase to comply with WCAG 2.1 SC ${g.wcag}.`
-      : `${fwNote}Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected element:\n- Selector: \`${g.selectors[0]}\`\n- HTML: \`${v.html.slice(0, 300)}\`\n\nApply the fix to comply with WCAG 2.1 SC ${g.wcag}.`;
+      ? `${fwNote}Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected elements (${g.count} instances):\n${selectorList}\n\nRepresentative HTML:\n\`\`\`html\n${v.html.slice(0, 400)}\n\`\`\`${fixSection}\n\nApply this fix to all ${g.count} instances across the codebase.`
+      : `${fwNote}Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected element:\n- Selector: \`${g.selectors[0]}\`\n\nCurrent HTML:\n\`\`\`html\n${v.html.slice(0, 400)}\n\`\`\`${fixSection}`;
+
+    const category = getFixCategory(g.ruleId);
+    const fixedCode = category === 'edit-element' || !category ? v.html : undefined;
+
     return {
       ruleId: g.ruleId,
       selectors: g.selectors,
       instanceCount: g.count,
       explanation,
-      fixedCode: v.html,
+      fixedCode,
+      fixCategory: getFixCategory(g.ruleId),
       wcagReference: `WCAG 2.1 SC ${g.wcag}`,
       optimalPrompt: prompt,
     };
