@@ -15,7 +15,7 @@ const program = new Command();
 program
   .name('wcag-a11y')
   .description('WCAG 2.1/2.2 accessibility auditor with AI-powered fixes')
-  .version('0.5.9');
+  .version('0.5.10');
 
 program
   .command('init')
@@ -35,7 +35,7 @@ program
   .option('--no-report', 'Skip saving markdown report to a11y-report.md')
   .option('--no-ai', 'Skip AI fix generation (faster, violations only)')
   .option('--no-explain', 'Hide AI fix explanations in terminal output')
-  .option('--terminal', 'Print violations summary to terminal', false)
+  .option('--no-terminal', 'Skip printing violations summary to terminal')
   .option('--fast-mode', 'Output only AI fix prompts — no summaries or explanations', false)
   .option('--group <strategy>', 'Group violations by rule or show individually (rule|none)', 'rule')
   .option('--ci', 'Exit with code 1 if any violations are found (for CI/CD pipelines)', false)
