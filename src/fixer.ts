@@ -1,10 +1,11 @@
-import { readFileSync, writeFileSync, readdirSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { execSync } from 'child_process';
-import { join, resolve } from 'path';
+import { resolve } from 'path';
 import chalk from 'chalk';
 import { crawl } from './crawler.js';
 import type { Violation, ImpactLevel } from './engine/types.js';
 import type { AIProvider } from './ai/types.js';
+import { extractNeedles, grepDir } from './source-finder.js';
 
 export interface FixRunOptions {
   url?: string;
@@ -18,8 +19,6 @@ export interface FixRunOptions {
   framework?: string;
 }
 
-const SOURCE_EXTS = new Set(['.jsx', '.tsx', '.js', '.ts', '.vue', '.svelte', '.html']);
-const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.git', '.next', '.nuxt', 'coverage', 'public']);
 
 export async function runFix(opts: FixRunOptions): Promise<void> {
   let allViolations: Violation[];
@@ -228,59 +227,6 @@ export function findSourceFile(violation: Violation, srcDir: string): string | n
   return null;
 }
 
-function extractNeedles(html: string): string[] {
-  const results: string[] = [];
-
-  const id = html.match(/\bid=["']([^"']{2,})["']/)?.[1];
-  if (id) results.push(`id="${id}"`);
-
-  const name = html.match(/\bname=["']([^"']{2,})["']/)?.[1];
-  if (name) results.push(`name="${name}"`);
-
-  const forAttr = html.match(/\bfor=["']([^"']{2,})["']/)?.[1];
-  if (forAttr) results.push(`for="${forAttr}"`);
-
-  // local src paths only
-  const src = html.match(/\bsrc=["'](?!https?:\/\/)([^"']{4,})["']/)?.[1];
-  if (src) results.push(src);
-
-  const text = html.match(/>([^<\s][^<]{4,60})</)?.[1]?.trim();
-  if (text) results.push(text);
-
-  // fallback: first meaningful class name
-  if (results.length === 0) {
-    const cls = html.match(/\bclass=["']([^"']+)["']/)?.[1]?.split(/\s+/)[0];
-    if (cls && cls.length > 3) results.push(cls);
-  }
-
-  return results.filter((s) => s.length >= 3);
-}
-
-function grepDir(dir: string, needle: string): string[] {
-  if (!existsSync(dir)) return [];
-  const hits: string[] = [];
-
-  try {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (entry.name.startsWith('.') || SKIP_DIRS.has(entry.name)) continue;
-      const full = join(dir, entry.name);
-      if (entry.isDirectory()) {
-        hits.push(...grepDir(full, needle));
-      } else if (entry.isFile() && SOURCE_EXTS.has(extOf(entry.name))) {
-        try {
-          if (readFileSync(full, 'utf8').includes(needle)) hits.push(full);
-        } catch { /* skip */ }
-      }
-    }
-  } catch { /* skip unreadable dirs */ }
-
-  return hits;
-}
-
-function extOf(name: string): string {
-  const i = name.lastIndexOf('.');
-  return i >= 0 ? name.slice(i) : '';
-}
 
 function stripCodeFences(text: string): string {
   const m = text.match(/^```[\w]*\n([\s\S]*?)\n?```\s*$/);

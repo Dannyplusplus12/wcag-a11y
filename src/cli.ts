@@ -42,11 +42,12 @@ program
   .option('--auth-state <path>', 'Path to Playwright storageState JSON for authenticated sessions (e.g. auth.json)')
   .option('--provider <name>', 'Override the AI provider from config (gemini|openai|ollama|anthropic|mistral|groq|cohere|xai|deepseek|together|perplexity|azure-openai)')
   .option('--framework <name>', 'Override framework detection for this run (e.g. next, react, vue, angular, svelte, astro)')
-  .action(async (opts: { url: string; pages: string[]; crawl: boolean; report: boolean; ai: boolean; explain: boolean; terminal: boolean; fastMode: boolean; group: string; ci: boolean; authState?: string; provider?: string; framework?: string }) => {
+  .option('--src-dir <path>', 'Source directory for file location (default: ./src)', './src')
+  .action(async (opts: { url: string; pages: string[]; crawl: boolean; report: boolean; ai: boolean; explain: boolean; terminal: boolean; fastMode: boolean; group: string; ci: boolean; authState?: string; provider?: string; framework?: string; srcDir: string }) => {
     try {
       console.log(`\nScanning ${opts.url}...`);
 
-      const result = await crawl({ url: opts.url, pages: opts.pages, crawl: opts.crawl, framework: opts.framework, authState: opts.authState });
+      const result = await crawl({ url: opts.url, pages: opts.pages, crawl: opts.crawl, framework: opts.framework, authState: opts.authState, srcDir: opts.srcDir });
 
       if (opts.terminal && !opts.fastMode) {
         printTerminalReport(result);

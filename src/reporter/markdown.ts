@@ -2,6 +2,17 @@ import { writeFileSync } from 'fs';
 import type { ScanResult } from '../engine/types.js';
 import type { AIFix } from '../ai/types.js';
 
+const FRAMEWORK_FENCE: Record<string, string> = {
+  'React': 'jsx',
+  'Next.js': 'jsx',
+  'Gatsby': 'jsx',
+  'Remix': 'jsx',
+  'Vue 3': 'vue',
+  'Vue 2': 'vue',
+  'Nuxt.js': 'vue',
+  'Svelte': 'svelte',
+};
+
 const IMPACT_EMOJI: Record<string, string> = {
   critical: '🔴',
   serious: '🟠',
@@ -106,7 +117,8 @@ function buildFullReport(result: ScanResult, fixes: AIFix[]): string[] {
         lines.push('**Why it matters:**', fix.explanation, '');
 
         if ((!fix.fixCategory || fix.fixCategory === 'edit-element') && fix.fixedCode) {
-          lines.push('**Fixed code:**', '```html', fix.fixedCode, '```', '');
+          const fence = FRAMEWORK_FENCE[result.framework ?? ''] ?? 'html';
+          lines.push('**Fixed code:**', `\`\`\`${fence}`, fix.fixedCode, '```', '');
         }
 
         lines.push(

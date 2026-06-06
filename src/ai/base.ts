@@ -9,12 +9,13 @@ function buildFallbackFix(g: ViolationGroup, framework?: string): AIFix {
   const selectorList = g.selectors.map((s) => `- \`${s}\``).join('\n');
   const explanation = fallbackExplanation(g.ruleId, g.description, g.wcag, g.level);
   const fwNote = framework ? `This project uses ${framework}.\n\n` : '';
+  const sourceNote = v.source ? `File: ${v.source}\n\n` : '';
   const fixInstructions = getFix(g.ruleId);
   const fixSection = fixInstructions ? `\n\nHow to fix:\n${fixInstructions}` : '';
 
   const prompt = g.count > 1
-    ? `${fwNote}Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected elements (${g.count} instances):\n${selectorList}\n\nRepresentative HTML:\n\`\`\`html\n${v.html.slice(0, 400)}\n\`\`\`${fixSection}\n\nApply this fix to all ${g.count} instances across the codebase.`
-    : `${fwNote}Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected element:\n- Selector: \`${g.selectors[0]}\`\n\nCurrent HTML:\n\`\`\`html\n${v.html.slice(0, 400)}\n\`\`\`${fixSection}`;
+    ? `${fwNote}${sourceNote}Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected elements (${g.count} instances):\n${selectorList}\n\nRepresentative HTML:\n\`\`\`html\n${v.html.slice(0, 400)}\n\`\`\`${fixSection}\n\nApply this fix to all ${g.count} instances across the codebase.`
+    : `${fwNote}${sourceNote}Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected element:\n- Selector: \`${g.selectors[0]}\`\n\nCurrent HTML:\n\`\`\`html\n${v.html.slice(0, 400)}\n\`\`\`${fixSection}`;
 
   return {
     ruleId: g.ruleId,

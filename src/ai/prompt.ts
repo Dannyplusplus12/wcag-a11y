@@ -22,8 +22,9 @@ export function buildPrompt(groups: ViolationGroup[], framework?: string): strin
       const category = getFixCategory(g.ruleId) ?? 'edit-element';
       const fixLine = fixHint ? `\n   Fix guidance: ${fixHint}` : '';
       const categoryLine = `\n   Fix type: ${category}`;
+      const sourceLine = g.representative.source ? `\n   Source file: ${g.representative.source}` : '';
       return `${i + 1}. Rule: ${g.ruleId} | WCAG ${g.wcag} (Level ${g.level}) | Impact: ${g.impact}
-   Page: ${g.page}
+   Page: ${g.page}${sourceLine}
    Instances: ${g.count} element(s)
    Selectors: ${g.selectors.join(', ')}
    Representative Element: ${g.representative.html}
@@ -40,8 +41,8 @@ export function buildPrompt(groups: ViolationGroup[], framework?: string): strin
     : `"fixedCode": include ONLY when the violation's "Fix type" is "edit-element". Show the corrected HTML snippet — NOT a copy of the original broken element. Omit this field entirely for "add-elsewhere", "change-css", and "restructure" violations.`;
 
   const optimalPromptInstruction = framework
-    ? `"optimalPrompt": a ready-to-paste prompt for an AI coding assistant (Cursor, Copilot, Claude) working in a ${framework} codebase. Structure it as: (1) state the WCAG 2.1/2.2 criterion being violated, (2) quote the affected selector and current HTML, (3) provide the exact code change required in ${syntax} syntax — include a concrete before/after snippet or the specific element to add/modify/remove. The prompt must be actionable without requiring additional research.`
-    : `"optimalPrompt": a ready-to-paste prompt for an AI coding assistant (Cursor, Copilot, Claude). Structure it as: (1) state the WCAG 2.1/2.2 criterion being violated, (2) quote the affected selector and current HTML, (3) provide the exact code change required — include a concrete before/after snippet or the specific element to add/modify/remove. The prompt must be fully actionable: tell the developer exactly what to write, not just that something needs fixing.`;
+    ? `"optimalPrompt": a ready-to-paste prompt for an AI coding assistant (Cursor, Copilot, Claude) working in a ${framework} codebase. Structure it as: (1) if "Source file" is present in the input, start with "In [filename], " to specify where to make the change; (2) state the WCAG 2.1/2.2 criterion being violated; (3) quote the affected selector and current HTML; (4) provide the exact code change required in ${syntax} syntax — include a concrete before/after snippet. The prompt must be actionable without requiring additional research.`
+    : `"optimalPrompt": a ready-to-paste prompt for an AI coding assistant (Cursor, Copilot, Claude). Structure it as: (1) if "Source file" is present in the input, start with "In [filename], " to specify where to make the change; (2) state the WCAG 2.1/2.2 criterion being violated; (3) quote the affected selector and current HTML; (4) provide the exact code change required — include a concrete before/after snippet. The prompt must be fully actionable: tell the developer exactly what to write, not just that something needs fixing.`;
 
   return `You are a WCAG accessibility expert. Analyze these violations and return a JSON array.${frameworkLine}
 Each item must have:

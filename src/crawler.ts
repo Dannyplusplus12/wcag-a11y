@@ -1,6 +1,9 @@
 import { chromium, type Page } from 'playwright';
+import { existsSync } from 'fs';
+import { resolve } from 'path';
 import { scanPage } from './engine/index.js';
 import type { ScanResult, PageScanResult } from './engine/types.js';
+import { grepForFile } from './source-finder.js';
 
 async function detectFramework(page: Page): Promise<string | undefined> {
   try {
@@ -37,6 +40,7 @@ export interface CrawlOptions {
   crawl?: boolean;    // auto-discover routes by following same-origin links
   framework?: string; // skip auto-detection and use this value directly
   authState?: string; // path to Playwright storageState JSON (cookies + localStorage)
+  srcDir?: string;    // source directory for grep-based file location fallback (e.g. './src')
 }
 
 export async function crawl(options: CrawlOptions): Promise<ScanResult> {
@@ -70,12 +74,32 @@ export async function crawl(options: CrawlOptions): Promise<ScanResult> {
     const results: PageScanResult[] = [];
     let framework: string | undefined = options.framework;
 
+    const absSrcDir = options.srcDir
+      ? resolve(process.cwd(), options.srcDir)
+      : resolve(process.cwd(), 'src');
+
     for (const pageUrl of pagesToVisit) {
       const page = await context.newPage();
       try {
         await page.goto(pageUrl, { waitUntil: 'networkidle', timeout: 30000 });
         if (!framework) framework = await detectFramework(page);
         const result = await scanPage(page, pageUrl);
+
+        // Grep fallback: populate source for violations that React Fiber couldn't resolve
+        if (existsSync(absSrcDir)) {
+          const cwd = process.cwd();
+          for (const v of result.violations) {
+            if (!v.source) {
+              const file = grepForFile(v.html, absSrcDir);
+              if (file) {
+                v.source = file.startsWith(cwd)
+                  ? file.slice(cwd.length + 1).replace(/\\/g, '/')
+                  : file.replace(/\\/g, '/');
+              }
+            }
+          }
+        }
+
         results.push(result);
       } catch (err) {
         console.error(`Failed to scan ${pageUrl}: ${(err as Error).message}`);
