@@ -92,23 +92,14 @@ export async function runDemo(opts: { report: boolean }): Promise<void> {
     ].filter(Boolean).join(' · ');
     console.log(`\n  ${chalk.red('✖')}  ${chalk.cyan(url)}  ${counts}\n`);
 
-    // One sample per impact level
-    const shown = new Set<string>();
-    const samples: typeof violations = [];
-    for (const impact of ['critical', 'serious', 'moderate', 'minor'] as const) {
-      const v = violations.find((x) => x.impact === impact && !shown.has(x.ruleId));
-      if (v) { samples.push(v); shown.add(v.ruleId); }
-    }
-
-    for (const v of samples) {
-      const color = IMPACT_COLOR[v.impact] ?? chalk.white;
-      console.log(`  ${color(`[${v.impact.toUpperCase()}]`)}  ${v.description}  ${chalk.gray(`WCAG ${v.wcag}`)}`);
-      console.log(`  ${chalk.gray('→')} ${chalk.dim(v.selector)}\n`);
-    }
-
-    const remaining = violations.length - samples.length;
-    if (remaining > 0) {
-      console.log(chalk.gray(`  ... and ${remaining} more violation${remaining === 1 ? '' : 's'}`));
+    // Show every violation grouped by rule (same as real scan --terminal)
+    const { groupViolations } = await import('./ai/group.js');
+    const groups = groupViolations(violations, 'rule');
+    for (const g of groups) {
+      const color = IMPACT_COLOR[g.impact] ?? chalk.white;
+      const countSuffix = g.count > 1 ? chalk.gray(` ×${g.count}`) : '';
+      console.log(`  ${color(`[${g.impact.toUpperCase()}]`)}${countSuffix}  ${g.description}  ${chalk.gray(`WCAG ${g.wcag}`)}`);
+      console.log(`  ${chalk.gray('→')} ${chalk.dim(g.selectors[0])}\n`);
     }
 
     console.log('\n' + chalk.gray('─'.repeat(60)));

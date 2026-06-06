@@ -16,15 +16,11 @@ function buildFallbackFix(g: ViolationGroup, framework?: string): AIFix {
     ? `${fwNote}Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected elements (${g.count} instances):\n${selectorList}\n\nRepresentative HTML:\n\`\`\`html\n${v.html.slice(0, 400)}\n\`\`\`${fixSection}\n\nApply this fix to all ${g.count} instances across the codebase.`
     : `${fwNote}Fix WCAG 2.1 SC ${g.wcag} (Level ${g.level}) — ${g.description}\n\nAffected element:\n- Selector: \`${g.selectors[0]}\`\n\nCurrent HTML:\n\`\`\`html\n${v.html.slice(0, 400)}\n\`\`\`${fixSection}`;
 
-  const category = getFixCategory(g.ruleId);
-  const fixedCode = category === 'edit-element' || !category ? v.html : undefined;
-
   return {
     ruleId: g.ruleId,
     selectors: g.selectors,
     instanceCount: g.count,
     explanation,
-    fixedCode,
     fixCategory: getFixCategory(g.ruleId),
     wcagReference: `WCAG 2.1 SC ${g.wcag}`,
     optimalPrompt: prompt,
