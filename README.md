@@ -22,50 +22,58 @@ npx wcag-a11y demo
 
 ## What the output looks like
 
+Running `wcag-a11y demo` prints a compact summary and saves the full report:
+
 ```
-WCAG A11y — scan complete
+wcag-a11y demo — scanning built-in page with intentional WCAG violations...
+
+Scan complete  ───────────────────────────────────────────────────────
+
+  ✖  http://127.0.0.1:PORT  7 critical · 6 serious · 7 moderate
+
+  [CRITICAL]  Images must have an alt attribute  WCAG 1.1.1
+  → img[src="banner.jpg"]
+
+  [SERIOUS]  Text must have a contrast ratio of at least 4.5:1 against its background  WCAG 1.4.3
+  → p
+
+  [MODERATE]  Page should have a skip navigation link as the first focusable element  WCAG 2.4.1
+  → a:first-of-type
+
+  ... and 17 more violations
+
 ────────────────────────────────────────────────────────────
 
-  ✖  http://localhost:3000  3 critical  4 serious  3 moderate
+Report saved → a11y-report.md
+  20 violations · fix prompts included
 
-     [CRITICAL] Images must have an alt attribute  WCAG 1.1.1
-     → img
-     [CRITICAL] Form inputs must have an associated label  WCAG 1.3.1
-     → input[type="email"]
-     [CRITICAL] Buttons must have an accessible name  WCAG 4.1.2
-     → button[type="submit"]
-     [SERIOUS]  Normal text must meet 4.5:1 contrast ratio  WCAG 1.4.3
-     → p
-     [SERIOUS]  Links must have descriptive text  WCAG 2.4.4
-     → a[href="/sale"]
-     … and 5 more
-
-────────────────────────────────────────────────────────────
-Total: 3 critical · 4 serious · 3 moderate
-
-AI Fix Prompts — paste any of these into Cursor, Copilot, or Claude
-────────────────────────────────────────────────────────────
-
-[img-alt]
-  → img
-  Screen reader users hear nothing for this image — branding, instructions,
-  or data it conveys is completely invisible to them.
-┌─ Copy this prompt ──────────────────────────────────────
-│ Fix WCAG 1.1.1 (Level A) — img is missing an alt attribute
-│
-│ Current HTML:
-│   <img src="banner.jpg">
-│
-│ How to fix:
-│   Add alt text describing the image content.
-│   Use alt="" if the image is purely decorative.
-│   Example: <img src="banner.jpg" alt="Summer sale — 50% off">
-└─────────────────────────────────────────────────────────
-
-… 9 more prompts — full report saved to a11y-report.md
+Run on your own project:  npx wcag-a11y scan -u http://localhost:3000
 ```
 
-Each prompt tells you the WCAG criterion, shows the broken element, and gives the exact fix — ready to paste into your AI editor.
+`a11y-report.md` contains the full breakdown — every violation, its WCAG criterion, why it matters, and a ready-to-paste prompt for Cursor, Copilot, or Claude:
+
+```markdown
+### 🔴 [CRITICAL] Images must have an alt attribute
+
+**Rule:** `img-alt` | **WCAG:** 1.1.1 | **Instances:** 1
+
+**Representative element:**
+`img[src="banner.jpg"]`
+
+**Why it matters:**
+Screen reader users hear nothing for this image — any information it conveys
+is completely invisible to them.
+
+**📋 Prompt for your AI assistant (Cursor / Copilot / Claude):**
+Fix WCAG 2.1 SC 1.1.1 (Level A) — Images must have an alt attribute
+
+  Affected element: img[src="banner.jpg"]
+  Current HTML: <img src="banner.jpg">
+
+  How to fix: Add an alt attribute describing the image content.
+  Use alt="" for decorative images.
+  Example: <img src="photo.jpg" alt="Team photo at the 2024 company retreat">
+```
 
 ---
 
@@ -224,12 +232,11 @@ Accepted framework values: `next`, `react`, `vue`, `nuxt`, `angular`, `svelte`, 
 
 ### `wcag-a11y demo`
 
-Scan a built-in page with 11 intentional violations. No dev server or config required — useful for trying the tool before pointing it at your own project.
+Scan a built-in page with intentional violations. No dev server or config required — runs in seconds and shows you exactly what a real scan produces.
 
 ```bash
-wcag-a11y demo               # violations + fix prompts + saves a11y-report.md (no config needed)
-wcag-a11y demo --no-ai      # violations only, no fix prompts
-wcag-a11y demo --no-report  # violations + fix prompts, no report file
+wcag-a11y demo               # scan + fix prompts + saves a11y-report.md (no config needed)
+wcag-a11y demo --no-report  # print summary only, skip saving the report file
 ```
 
 ---

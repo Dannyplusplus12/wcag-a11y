@@ -15,7 +15,7 @@ const program = new Command();
 program
   .name('wcag-a11y')
   .description('WCAG 2.1/2.2 accessibility auditor with AI-powered fixes')
-  .version('0.5.1');
+  .version('0.5.2');
 
 program
   .command('init')
@@ -133,10 +133,9 @@ program
   .command('demo')
   .description('Scan a built-in demo page with intentional violations — no dev server needed')
   .option('--no-report', 'Skip saving markdown report to a11y-report.md')
-  .option('--no-ai', 'Skip AI fix generation (faster, violations only)')
-  .action(async (opts: { report: boolean; ai: boolean }) => {
+  .action(async (opts: { report: boolean }) => {
     try {
-      await runDemo({ ai: opts.ai, report: opts.report });
+      await runDemo({ report: opts.report });
     } catch (err) {
       console.error(`\nError: ${(err as Error).message}`);
       process.exit(1);
