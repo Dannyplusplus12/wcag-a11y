@@ -48,8 +48,7 @@ export function printTerminalReport(result: ScanResult): void {
   }
 
   console.log('\n' + chalk.gray('─'.repeat(60)));
-  console.log(`Total: ${chalk.red(result.criticalCount + ' critical')} · ${chalk.yellow(result.seriousCount + ' serious')} · ${chalk.blue(result.moderateCount + ' moderate')}`);
-  console.log(chalk.gray('Run with --report to save a full markdown report with AI fix suggestions.\n'));
+  console.log(`Total: ${chalk.red(result.criticalCount + ' critical')} · ${chalk.yellow(result.seriousCount + ' serious')} · ${chalk.blue(result.moderateCount + ' moderate')}\n`);
 }
 
 export function printAIPrompts(fixes: AIFix[], opts: { explain: boolean; fastMode?: boolean }): void {
