@@ -2,6 +2,7 @@ import { createServer } from 'http';
 import type { Server } from 'http';
 import chalk from 'chalk';
 import { crawl } from './crawler.js';
+import { generateFallbackFixes } from './ai/base.js';
 import { generateMarkdownReport } from './reporter/markdown.js';
 
 const DEMO_HTML = `<!DOCTYPE html>
@@ -113,8 +114,9 @@ export async function runDemo(opts: { report: boolean }): Promise<void> {
     console.log('\n' + chalk.gray('─'.repeat(60)));
 
     if (opts.report) {
-      generateMarkdownReport(result, []);
-      console.log(chalk.gray(`  ${violations.length} violations · open a11y-report.md for the full breakdown`));
+      const fixes = generateFallbackFixes(violations, 'rule');
+      generateMarkdownReport(result, fixes);
+      console.log(chalk.gray(`  ${violations.length} violations · fix prompts for each — open a11y-report.md`));
     }
 
     console.log(chalk.gray('\nRun on your own project:') + '  ' + chalk.bold('npx wcag-a11y scan -u http://localhost:3000') + '\n');
