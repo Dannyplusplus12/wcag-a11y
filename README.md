@@ -227,8 +227,9 @@ Accepted framework values: `next`, `react`, `vue`, `nuxt`, `angular`, `svelte`, 
 Scan a built-in page with 11 intentional violations. No dev server or config required — useful for trying the tool before pointing it at your own project.
 
 ```bash
-wcag-a11y demo           # violations + AI fix prompts (requires config)
-wcag-a11y demo --no-ai  # violations only, no AI
+wcag-a11y demo               # violations + fix prompts + saves a11y-report.md (no config needed)
+wcag-a11y demo --no-ai      # violations only, no fix prompts
+wcag-a11y demo --no-report  # violations + fix prompts, no report file
 ```
 
 ---

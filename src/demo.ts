@@ -1,8 +1,7 @@
 import { createServer } from 'http';
 import type { Server } from 'http';
 import { crawl } from './crawler.js';
-import { createAIProvider } from './ai/index.js';
-import { loadConfig } from './config.js';
+import { generateFallbackFixes } from './ai/base.js';
 import { printTerminalReport, printAIPrompts } from './reporter/terminal.js';
 import { generateMarkdownReport } from './reporter/markdown.js';
 
@@ -83,18 +82,20 @@ export async function runDemo(opts: { ai: boolean; report: boolean }): Promise<v
     const result = await crawl({ url, pages: ['/'] });
     printTerminalReport(result);
 
-    if (opts.ai && result.totalViolations > 0) {
-      const config = loadConfig();
-      const provider = createAIProvider(config);
-      const violations = result.pages.flatMap((p) => p.violations);
+    const violations = result.pages.flatMap((p) => p.violations);
 
+    if (opts.ai && violations.length > 0) {
       console.log(`\nGenerating AI fixes for ${violations.length} violations...`);
-      const fixes = await provider.generateFixes(violations, 'rule', result.framework);
+      const fixes = generateFallbackFixes(violations, 'rule');
       printAIPrompts(fixes, { explain: true });
 
-      if (opts.report) generateMarkdownReport(result, fixes);
+      if (opts.report) {
+        generateMarkdownReport(result, fixes);
+        console.log('\nReport saved to a11y-report.md');
+      }
     } else if (opts.report) {
       generateMarkdownReport(result, []);
+      console.log('\nReport saved to a11y-report.md');
     }
   } finally {
     server.close();

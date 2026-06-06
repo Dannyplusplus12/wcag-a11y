@@ -78,6 +78,17 @@ export function loadConfig(): Config {
   return { ...DEFAULTS, ...raw } as Config;
 }
 
+export function tryLoadConfig(): Config | null {
+  const configPath = join(process.cwd(), CONFIG_FILE);
+  if (!existsSync(configPath)) return null;
+  try {
+    const raw = JSON.parse(readFileSync(configPath, 'utf-8'));
+    return { ...DEFAULTS, ...raw } as Config;
+  } catch {
+    return null;
+  }
+}
+
 const STARTER_CONFIGS: Record<ProviderName, [Partial<Config>, string]> = {
   gemini: [
     { provider: 'gemini', apiKey: 'YOUR_GEMINI_API_KEY', model: 'gemini-2.5-flash' },

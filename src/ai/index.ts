@@ -13,6 +13,26 @@ import { TogetherProvider } from './together.js';
 import { PerplexityProvider } from './perplexity.js';
 import { AzureOpenAIProvider } from './azure-openai.js';
 
+export function isProviderConfigured(config: Config): boolean {
+  switch (config.provider) {
+    case 'ollama': return true;
+    case 'openai': return !!config.openaiApiKey && !config.openaiApiKey.startsWith('YOUR_');
+    case 'anthropic': return !!config.anthropicApiKey && !config.anthropicApiKey.startsWith('YOUR_');
+    case 'mistral': return !!config.mistralApiKey && !config.mistralApiKey.startsWith('YOUR_');
+    case 'groq': return !!config.groqApiKey && !config.groqApiKey.startsWith('YOUR_');
+    case 'cohere': return !!config.cohereApiKey && !config.cohereApiKey.startsWith('YOUR_');
+    case 'xai': return !!config.xaiApiKey && !config.xaiApiKey.startsWith('YOUR_');
+    case 'deepseek': return !!config.deepseekApiKey && !config.deepseekApiKey.startsWith('YOUR_');
+    case 'together': return !!config.togetherApiKey && !config.togetherApiKey.startsWith('YOUR_');
+    case 'perplexity': return !!config.perplexityApiKey && !config.perplexityApiKey.startsWith('YOUR_');
+    case 'azure-openai':
+      return !!(config.azureOpenaiApiKey && config.azureOpenaiEndpoint && config.azureOpenaiDeployment)
+        && !config.azureOpenaiApiKey.startsWith('YOUR_');
+    default:
+      return !!config.apiKey && !config.apiKey.startsWith('YOUR_');
+  }
+}
+
 export function createAIProvider(config: Config): AIProvider {
   switch (config.provider) {
     case 'ollama':
