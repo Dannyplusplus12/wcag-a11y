@@ -22,58 +22,57 @@ npx wcag-a11y demo
 
 ## What the output looks like
 
-Running `wcag-a11y demo` prints a compact summary and saves the full report:
+Running `wcag-a11y demo` scans a built-in page, prints a compact summary, and saves `a11y-report.md`:
 
 ```
 wcag-a11y demo — scanning built-in page with intentional WCAG violations...
 
 Scan complete  ───────────────────────────────────────────────────────
 
-  ✖  http://127.0.0.1:PORT  7 critical · 6 serious · 7 moderate
+  ✖  http://127.0.0.1:PORT  4 critical · 1 serious
 
   [CRITICAL]  Images must have an alt attribute  WCAG 1.1.1
-  → img[src="banner.jpg"]
+  → img[src="hero.jpg"]
 
   [SERIOUS]  Text must have a contrast ratio of at least 4.5:1 against its background  WCAG 1.4.3
-  → p
+  → #main > p
 
-  [MODERATE]  Page should have a skip navigation link as the first focusable element  WCAG 2.4.1
-  → a:first-of-type
-
-  ... and 17 more violations
+  ... and 3 more violations
 
 ────────────────────────────────────────────────────────────
 
 Report saved → a11y-report.md
-  20 violations · fix prompts included
+  5 violations · open a11y-report.md for the full breakdown
 
 Run on your own project:  npx wcag-a11y scan -u http://localhost:3000
 ```
 
-`a11y-report.md` contains the full breakdown — every violation, its WCAG criterion, why it matters, and a ready-to-paste prompt for Cursor, Copilot, or Claude:
+`a11y-report.md` is a clean, under-100-line breakdown — one entry per rule, with the selector and failing HTML:
 
 ```markdown
 ### 🔴 [CRITICAL] Images must have an alt attribute
 
-**Rule:** `img-alt` | **WCAG:** 1.1.1 | **Instances:** 1
+**Rule:** `img-alt`
+**WCAG:** SC 1.1.1 (Level A)
+**Instances:** 1
 
 **Representative element:**
-`img[src="banner.jpg"]`
-
-**Why it matters:**
-Screen reader users hear nothing for this image — any information it conveys
-is completely invisible to them.
-
-**📋 Prompt for your AI assistant (Cursor / Copilot / Claude):**
-Fix WCAG 2.1 SC 1.1.1 (Level A) — Images must have an alt attribute
-
-  Affected element: img[src="banner.jpg"]
-  Current HTML: <img src="banner.jpg">
-
-  How to fix: Add an alt attribute describing the image content.
-  Use alt="" for decorative images.
-  Example: <img src="photo.jpg" alt="Team photo at the 2024 company retreat">
+`img[src="hero.jpg"]`
+```html
+<img src="hero.jpg" width="800" height="400">
 ```
+
+---
+
+### 🟠 [SERIOUS] Text must have a contrast ratio of at least 4.5:1 against its background
+
+**Rule:** `color-contrast-text`
+**WCAG:** SC 1.4.3 (Level AA)
+**Instances:** 1
+...
+```
+
+Run `wcag-a11y scan -u http://localhost:3000` on your own project to get the full report with AI-generated fix prompts for every violation.
 
 ---
 

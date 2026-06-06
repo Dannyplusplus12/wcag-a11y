@@ -2,61 +2,51 @@ import { createServer } from 'http';
 import type { Server } from 'http';
 import chalk from 'chalk';
 import { crawl } from './crawler.js';
-import { generateFallbackFixes } from './ai/base.js';
 import { generateMarkdownReport } from './reporter/markdown.js';
 
 const DEMO_HTML = `<!DOCTYPE html>
-<html lang="">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title></title>
+  <title>Acme Store</title>
 </head>
 <body>
+  <a href="#main" class="skip-link">Skip to content</a>
+  <header>
+    <nav aria-label="Main">
+      <a href="/">Home</a>
+      <a href="/products">Products</a>
+    </nav>
+  </header>
+  <main id="main">
+    <h1>Summer Sale</h1>
 
-  <h1>Welcome to Acme Shop</h1>
+    <!-- missing alt attribute -->
+    <img src="hero.jpg" width="800" height="400">
 
-  <!-- img-alt: missing alt -->
-  <img src="banner.jpg">
+    <!-- low contrast: #aaa on #fff fails 4.5:1 -->
+    <p style="color:#aaa; background:#fff; font-size:14px;">Free shipping on orders over $50.</p>
 
-  <!-- color-contrast: low contrast on solid background (fails 4.5:1) -->
-  <p style="color:#aaa;background:#fff;font-size:14px;">
-    Summer sale — up to 50% off selected items.
-  </p>
+    <h2>Featured Products</h2>
 
-  <!-- color-contrast: rgba transparent bg — walks up to dark parent -->
-  <div style="background:#1a1a2e;padding:8px;">
-    <p style="color:#888;background:rgba(0,0,0,0);font-size:14px;">
-      Free shipping on orders over $50.
-    </p>
-  </div>
+    <!-- div used as button — not keyboard reachable -->
+    <div onclick="addToCart(1)">Add to Cart</div>
 
-  <!-- keyboard: div with click but no role/tabindex -->
-  <div onclick="addToCart()">Add to Cart</div>
+    <section aria-label="Newsletter">
+      <h2>Stay in the loop</h2>
+      <form>
+        <!-- email input with no label -->
+        <input type="email" placeholder="your@email.com" autocomplete="email">
+        <button type="submit">Subscribe</button>
+      </form>
+    </section>
 
-  <!-- form: input with no label, submit button with no name -->
-  <form id="newsletter">
-    <input type="email" placeholder="your@email.com">
-    <button type="submit"></button>
-  </form>
-
-  <!-- ARIA: invalid role -->
-  <div role="widget" id="promo-banner">Special offer!</div>
-
-  <!-- Structure: heading skips h2 → h4 -->
-  <h4>Featured Products</h4>
-
-  <!-- Link: non-descriptive text -->
-  <a href="/sale">Click here</a>
-
-  <!-- Media: video without captions -->
-  <video src="promo.mp4" controls></video>
-
-  <!-- ARIA: aria-hidden but focusable -->
-  <button aria-hidden="true" tabindex="0">Hidden action</button>
-
-  <!-- Link: empty anchor -->
-  <a href="/about"></a>
-
+    <!-- anchor with no text content -->
+    <a href="/wishlist"></a>
+  </main>
+  <footer>
+    <p>&copy; 2024 Acme Store. All rights reserved.</p>
+  </footer>
 </body>
 </html>`;
 
@@ -101,7 +91,7 @@ export async function runDemo(opts: { report: boolean }): Promise<void> {
     ].filter(Boolean).join(' · ');
     console.log(`\n  ${chalk.red('✖')}  ${chalk.cyan(url)}  ${counts}\n`);
 
-    // Show one sample per impact level (up to 4 total)
+    // One sample per impact level
     const shown = new Set<string>();
     const samples: typeof violations = [];
     for (const impact of ['critical', 'serious', 'moderate', 'minor'] as const) {
@@ -122,11 +112,9 @@ export async function runDemo(opts: { report: boolean }): Promise<void> {
 
     console.log('\n' + chalk.gray('─'.repeat(60)));
 
-    const fixes = generateFallbackFixes(violations, 'rule');
-
     if (opts.report) {
-      generateMarkdownReport(result, fixes);
-      console.log(chalk.gray(`  ${violations.length} violations · fix prompts included`));
+      generateMarkdownReport(result, []);
+      console.log(chalk.gray(`  ${violations.length} violations · open a11y-report.md for the full breakdown`));
     }
 
     console.log(chalk.gray('\nRun on your own project:') + '  ' + chalk.bold('npx wcag-a11y scan -u http://localhost:3000') + '\n');
