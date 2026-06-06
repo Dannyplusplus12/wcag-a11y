@@ -31,9 +31,6 @@ Scan complete  ─────────────────────�
 
   ✖  http://127.0.0.1:PORT  4 critical · 1 serious
 
-  [CRITICAL]  Images must have an alt attribute  WCAG 1.1.1
-  → img[src="hero.jpg"]
-
   [SERIOUS]  Text must have a contrast ratio of at least 4.5:1 against its background  WCAG 1.4.3
   → #main > p
 
@@ -42,6 +39,9 @@ Scan complete  ─────────────────────�
 
   [CRITICAL]  Form inputs must have an associated label  WCAG 1.3.1
   → #main > section > form > input
+
+  [CRITICAL]  Buttons must have an accessible name  WCAG 4.1.2
+  → #main > section > form > button
 
   [CRITICAL]  Links must have non-empty accessible names  WCAG 2.4.4
   → #main > a
@@ -57,39 +57,6 @@ Run on your own project:  npx wcag-a11y scan -u http://localhost:3000
 `a11y-report.md` contains one entry per rule — the failing element, why it matters to real users, and a ready-to-paste prompt for Cursor, Copilot, or Claude:
 
 ~~~markdown
-### 🔴 [CRITICAL] Images must have an alt attribute
-
-**Rule:** `img-alt`
-**WCAG:** WCAG 2.1 SC 1.1.1
-**Instances:** 1
-
-**Representative element:**
-`img[src="hero.jpg"]`
-```html
-<img src="hero.jpg" width="800" height="400">
-```
-
-**Why it matters:**
-Screen reader users hear nothing for this image — any information it conveys
-(branding, instructions, data) is completely invisible to them.
-
-**📋 Prompt for your AI assistant (Cursor / Copilot / Claude):**
-```
-Fix WCAG 2.1 SC 1.1.1 (Level A) — Images must have an alt attribute
-
-Affected element:
-- Selector: `img[src="hero.jpg"]`
-
-Current HTML:
-  <img src="hero.jpg" width="800" height="400">
-
-How to fix:
-Add an `alt` attribute describing the image content. Use `alt=""` for decorative images.
-Example: <img src="photo.jpg" alt="Team photo at the 2024 company retreat">
-```
-
----
-
 ### 🟠 [SERIOUS] Text must have a contrast ratio of at least 4.5:1 against its background
 
 **Rule:** `color-contrast-text`
@@ -113,9 +80,46 @@ Fix WCAG 2.1 SC 1.4.3 (Level AA) — Text must have a contrast ratio of at least
 Affected element:
 - Selector: `#main > p`
 
+Current HTML:
+  <p style="color:#aaa; background:#fff; font-size:14px;">Free shipping on orders over $50.</p>
+
 How to fix:
 Darken the text color to meet 4.5:1 contrast.
 Example: change `color: #aaa` to `color: #767676` (minimum passing value).
+```
+
+---
+
+### 🔴 [CRITICAL] Buttons must have an accessible name
+
+**Rule:** `button-name`
+**WCAG:** WCAG 2.1 SC 4.1.2
+**Instances:** 1
+
+**Representative element:**
+`#main > section > form > button`
+```html
+<button type="submit"><svg ...></svg></button>
+```
+
+**Why it matters:**
+Screen reader users hear only "button" with no label — they cannot tell what
+the button does without exploring the surrounding content visually.
+
+**📋 Prompt for your AI assistant (Cursor / Copilot / Claude):**
+```
+Fix WCAG 2.1 SC 4.1.2 (Level A) — Buttons must have an accessible name
+
+Affected element:
+- Selector: `#main > section > form > button`
+
+Current HTML:
+  <button type="submit"><svg ...></svg></button>
+
+How to fix:
+Add visible text content or aria-label to the button.
+Example: <button type="submit" aria-label="Subscribe">...</button>
+         or <button type="submit">Subscribe <svg ...></svg></button>
 ```
 
 ... 3 more violations with prompts

@@ -22,8 +22,7 @@ const DEMO_HTML = `<!DOCTYPE html>
   <main id="main">
     <h1>Summer Sale</h1>
 
-    <!-- missing alt attribute -->
-    <img src="hero.jpg" width="800" height="400">
+    <img src="hero.jpg" width="800" height="400" alt="Summer sale promotional banner">
 
     <!-- low contrast: #aaa on #fff fails 4.5:1 -->
     <p style="color:#aaa; background:#fff; font-size:14px;">Free shipping on orders over $50.</p>
@@ -38,7 +37,12 @@ const DEMO_HTML = `<!DOCTYPE html>
       <form>
         <!-- email input with no label -->
         <input type="email" placeholder="your@email.com" autocomplete="email">
-        <button type="submit">Subscribe</button>
+        <!-- icon-only button with no accessible name -->
+        <button type="submit">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M2 8l6-6 6 6M8 2v12"/>
+          </svg>
+        </button>
       </form>
     </section>
 
