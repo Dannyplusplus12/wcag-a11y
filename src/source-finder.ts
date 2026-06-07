@@ -7,9 +7,23 @@ export const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.git', '.nex
 export function grepForFile(html: string, srcDir: string): string | null {
   for (const needle of extractNeedles(html)) {
     const hits = grepDir(srcDir, needle);
-    if (hits.length > 0) return hits[0];
+    if (hits.length > 0) {
+      const file = hits[0];
+      const line = findLineNumber(file, needle);
+      return line !== null ? `${file}:${line}` : file;
+    }
   }
   return null;
+}
+
+function findLineNumber(filePath: string, needle: string): number | null {
+  try {
+    const lines = readFileSync(filePath, 'utf8').split('\n');
+    const idx = lines.findIndex((l) => l.includes(needle));
+    return idx >= 0 ? idx + 1 : null;
+  } catch {
+    return null;
+  }
 }
 
 export function extractNeedles(html: string): string[] {

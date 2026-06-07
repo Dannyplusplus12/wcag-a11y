@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Dannyplusplus12/WCAG-A11y/actions/workflows/ci.yml/badge.svg)](https://github.com/Dannyplusplus12/WCAG-A11y/actions/workflows/ci.yml)
 
-Most accessibility auditors stop at detection — they tell you *what* is broken and leave the rest to you. `wcag-a11y` crawls your running dev server with Playwright, runs 40+ WCAG 2.1/2.2 checks, and uses AI to generate ready-to-paste fix prompts **or write the fixes directly into your source files**. Works with authenticated apps via Playwright session state.
+Most accessibility auditors stop at detection — they tell you *what* is broken and leave the rest to you. `wcag-a11y` crawls your running dev server with Playwright, runs 40+ WCAG 2.1/2.2 checks, and uses AI to generate ready-to-paste fix prompts **or write the fixes directly into your source files**. Each violation links to the exact source file and line number. Works with authenticated apps via Playwright session state.
 
 Two modes:
 - **`scan`** — find violations + get AI prompts you paste into Cursor, Copilot, or Claude
@@ -54,7 +54,7 @@ Report saved → a11y-report.md
 Run on your own project:  npx wcag-a11y scan -u http://localhost:3000
 ```
 
-`a11y-report.md` contains one entry per rule — the failing element, why it matters to real users, and a ready-to-paste prompt for Cursor, Copilot, or Claude:
+`a11y-report.md` contains one entry per rule — the failing element with its **source file and line number**, why it matters to real users, and a ready-to-paste prompt for Cursor, Copilot, or Claude:
 
 ~~~markdown
 ### 🟠 [SERIOUS] Text must have a contrast ratio of at least 4.5:1 against its background
@@ -64,7 +64,7 @@ Run on your own project:  npx wcag-a11y scan -u http://localhost:3000
 **Instances:** 1
 
 **Representative element:**
-`#main > p`
+`#main > p` — `src/components/Promo.jsx:14`
 ```html
 <p style="color:#aaa; background:#fff; font-size:14px;">Free shipping on orders over $50.</p>
 ```
